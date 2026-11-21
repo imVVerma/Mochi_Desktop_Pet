@@ -27,12 +27,17 @@ class CanvasRenderer:
         self.anim_tick: int = 0
         self.blink_timer: int = 0
         self.is_blinking: bool = False
+        self.is_sleeping: bool = False
         self.particles: List[Dict] = []
         self.speech_bubble = SpeechBubble()
 
         # Dynamic ear physics state
         self.ear_flop_l: float = -14.0
         self.ear_flop_r: float = 14.0
+
+        # Codex-style organic kinematics: corner loafing and curious head tilt
+        self.loaf_factor: float = 0.0
+        self.head_tilt_x: float = 0.0
 
     def get_color(self, state: State, stats: PetStats, auto_color: bool = True, base_color: str = "#FFB6C1") -> str:
         """Calculates dynamic body color responding to emotion and circadian rhythm."""
@@ -88,6 +93,7 @@ class CanvasRenderer:
         velocity_speed: float = 0.0,
         auto_color: bool = True,
         base_color: str = "#FFB6C1",
+        is_docked: bool = False,
     ) -> None:
         """Draws procedural Floppy Bunny body, ears, tail, paws, anime facial features, and speech bubble."""
         self.canvas.delete("all")
@@ -95,6 +101,12 @@ class CanvasRenderer:
         self.color_hue += 0.015
         self.update_particles()
         self.speech_bubble.tick()
+
+        # State flags
+        is_sleeping = (state == State.SLEEPING)
+        is_tired = (state == State.TIRED)
+        is_moving = (state in [State.WANDERING, State.RETURNING_HOME])
+        self.is_sleeping = is_sleeping
 
         # Blinking logic
         self.blink_timer += 1
@@ -106,22 +118,29 @@ class CanvasRenderer:
             self.is_blinking = False
             self.blink_timer = 0
 
-        # Body center and radii with squash & stretch
+        # Codex-style organic kinematics: smooth loafing when docked in home corner
+        is_loafing = (is_docked and not is_moving and not is_sleeping and state != State.DRAGGED)
+        target_loaf = 1.0 if is_loafing else 0.0
+        self.loaf_factor += (target_loaf - self.loaf_factor) * 0.12
+
+        # Idle procedural breathing loop (continuous gentle inhalation / exhalation)
+        breath_speed = 0.045 if is_sleeping else 0.085
+        breath_amp = 1.8 if is_sleeping else 1.2
+        breath_offset = math.sin(self.anim_tick * breath_speed) * breath_amp
+
+        # Body center and radii with squash & stretch, breathing, and corner loaf compression
         cx = self.width / 2
-        cy = self.height / 2 + offset_y + 14
-        rx = 42 + stretch_x
-        ry = max(26.0, 40 - stretch_x * 0.5)
+        cy = self.height / 2 + offset_y + 14 - (breath_offset * 0.5) + (self.loaf_factor * 2.5)
+        rx = max(28.0, 42 + stretch_x - (breath_offset * 0.4) + (self.loaf_factor * 3.5))
+        ry = max(24.0, 40 - stretch_x * 0.5 + breath_offset - (self.loaf_factor * 2.5))
 
         body_color = self.get_color(state, stats, auto_color, base_color)
-        is_sleeping = (state == State.SLEEPING)
-        is_tired = (state == State.TIRED)
-        is_moving = (state in [State.WANDERING, State.RETURNING_HOME])
 
         # -------------------------------------------------------------------------
         # 1. Fluffy Bunny Puffball Tail (Drawn behind body)
         # -------------------------------------------------------------------------
         tail_dir = -1 if mouse_rel_x >= 0 else 1
-        tail_wag = math.sin(self.anim_tick * 0.28) * 3 if not is_sleeping else 0
+        tail_wag = math.sin(self.anim_tick * 0.28) * (3.0 if not is_sleeping else 0.5)
         tail_cx = cx + tail_dir * (rx * 0.82)
         tail_cy = cy + ry * 0.32 + tail_wag
         tail_r = 13.0
@@ -143,9 +162,8 @@ class CanvasRenderer:
         )
 
         # -------------------------------------------------------------------------
-        # 2. Long Floppy Bunny Ears with Kinematic Flop Physics
+        # 2. Long Floppy Bunny Ears with Kinematic Flop Physics & Micro-Flutter
         # -------------------------------------------------------------------------
-        # Target ear flop angle based on state
         if is_sleeping or is_tired:
             target_flop_l = -58.0  # Drooped down along cheeks
             target_flop_r = 58.0
@@ -156,10 +174,11 @@ class CanvasRenderer:
             target_flop_l = -35.0  # Streamed back by air drag
             target_flop_r = 35.0
         else:
-            # Gentle relaxed flop sway
-            ear_sway = math.sin(self.anim_tick * 0.12) * 4.0
-            target_flop_l = -16.0 + ear_sway
-            target_flop_r = 16.0 + ear_sway
+            # Gentle relaxed flop sway with organic tip micro-flutter
+            ear_sway = math.sin(self.anim_tick * 0.12) * 3.5 + math.sin(self.anim_tick * 0.24) * 1.0
+            loaf_ear_drape = self.loaf_factor * 16.0
+            target_flop_l = -16.0 - loaf_ear_drape + ear_sway
+            target_flop_r = 16.0 + loaf_ear_drape - ear_sway
 
         # Smooth interpolation of ear angles
         self.ear_flop_l += (target_flop_l - self.ear_flop_l) * 0.25
@@ -170,16 +189,13 @@ class CanvasRenderer:
 
         def draw_ear(base_x: float, base_y: float, angle_deg: float, ear_sign: float):
             rad = math.radians(angle_deg)
-            # Tip coordinates
             tip_x = base_x + math.sin(rad) * ear_len
             tip_y = base_y - math.cos(rad) * ear_len
 
-            # Mid curvature control point
             mid_rad = math.radians(angle_deg * 0.7)
             mid_x = base_x + math.sin(mid_rad) * (ear_len * 0.55) + (ear_sign * 9.0)
             mid_y = base_y - math.cos(mid_rad) * (ear_len * 0.55)
 
-            # Outer ear polygon
             points = [
                 base_x - 7, base_y,
                 base_x - 10, base_y - 12,
@@ -190,7 +206,6 @@ class CanvasRenderer:
             ]
             self.canvas.create_polygon(points, smooth=True, fill=body_color, outline=OUTLINE_COLOR, width=2, tags="ear")
 
-            # Inner ear pink accent
             inner_points = [
                 base_x - 3, base_y - 4,
                 base_x - 5, base_y - 14,
@@ -232,63 +247,73 @@ class CanvasRenderer:
         )
 
         # -------------------------------------------------------------------------
-        # 5. Little Bunny Paws / Feet (Step motion when walking)
+        # 5. Little Bunny Paws / Feet (Stepping walk, tucks into loaf in corner)
         # -------------------------------------------------------------------------
         if not is_sleeping:
-            # Stepping foot animation
             step_phase = math.sin(self.anim_tick * 0.45) * 4.0 if is_moving else 0.0
             left_foot_y = cy + ry - 4 + step_phase
             right_foot_y = cy + ry - 4 - step_phase
-            foot_w, foot_h = 13.0, 8.0
+            foot_w = max(9.0, 13.0 - self.loaf_factor * 3.5)
+            foot_h = max(5.0, 8.0 - self.loaf_factor * 2.5)
+            foot_spacing = 24.0 - self.loaf_factor * 10.0
 
             # Left Foot
             self.canvas.create_oval(
-                cx - 24 - foot_w, left_foot_y - foot_h,
-                cx - 24 + foot_w, left_foot_y + foot_h,
+                cx - foot_spacing - foot_w, left_foot_y - foot_h,
+                cx - foot_spacing + foot_w, left_foot_y + foot_h,
                 fill=body_color, outline=OUTLINE_COLOR, width=2, tags="foot"
             )
             # Right Foot
             self.canvas.create_oval(
-                cx + 24 - foot_w, right_foot_y - foot_h,
-                cx + 24 + foot_w, right_foot_y + foot_h,
+                cx + foot_spacing - foot_w, right_foot_y - foot_h,
+                cx + foot_spacing + foot_w, right_foot_y + foot_h,
                 fill=body_color, outline=OUTLINE_COLOR, width=2, tags="foot"
             )
-            # Cute little toe lines
-            self.canvas.create_line(cx - 24, left_foot_y + 2, cx - 24, left_foot_y + foot_h, fill=OUTLINE_COLOR, width=1.5)
-            self.canvas.create_line(cx + 24, right_foot_y + 2, cx + 24, right_foot_y + foot_h, fill=OUTLINE_COLOR, width=1.5)
+            # Cute little toe lines (fade slightly in loaf)
+            if self.loaf_factor < 0.8:
+                self.canvas.create_line(cx - foot_spacing, left_foot_y + 2, cx - foot_spacing, left_foot_y + foot_h, fill=OUTLINE_COLOR, width=1.5)
+                self.canvas.create_line(cx + foot_spacing, right_foot_y + 2, cx + foot_spacing, right_foot_y + foot_h, fill=OUTLINE_COLOR, width=1.5)
 
         # -------------------------------------------------------------------------
-        # 6. Rosy Cheek Blush
+        # 6. Cursor Curiosity & Head Tilt (Face subtly turns towards nearby cursor)
+        # -------------------------------------------------------------------------
+        dist = math.hypot(mouse_rel_x, mouse_rel_y) or 1.0
+        target_tilt = (mouse_rel_x / dist) * min(3.5, dist * 0.035) if (not is_sleeping and dist < 180.0) else 0.0
+        self.head_tilt_x += (target_tilt - self.head_tilt_x) * 0.15
+        face_cx = cx + self.head_tilt_x
+
+        # -------------------------------------------------------------------------
+        # 7. Rosy Cheek Blush (Breathing pulse)
         # -------------------------------------------------------------------------
         if not is_sleeping:
-            blush_rx, blush_ry = 9.0, 5.0
-            self.canvas.create_oval(cx - rx * 0.68 - blush_rx, cy + 3 - blush_ry, cx - rx * 0.68 + blush_rx, cy + 3 + blush_ry, fill=BLUSH_COLOR, outline="")
-            self.canvas.create_oval(cx + rx * 0.68 - blush_rx, cy + 3 - blush_ry, cx + rx * 0.68 + blush_rx, cy + 3 + blush_ry, fill=BLUSH_COLOR, outline="")
+            blush_rx = 9.0 + breath_offset * 0.3
+            blush_ry = 5.0
+            self.canvas.create_oval(face_cx - rx * 0.68 - blush_rx, cy + 3 - blush_ry, face_cx - rx * 0.68 + blush_rx, cy + 3 + blush_ry, fill=BLUSH_COLOR, outline="")
+            self.canvas.create_oval(face_cx + rx * 0.68 - blush_rx, cy + 3 - blush_ry, face_cx + rx * 0.68 + blush_rx, cy + 3 + blush_ry, fill=BLUSH_COLOR, outline="")
 
         # -------------------------------------------------------------------------
-        # 7. Delicate Bunny Whiskers
+        # 8. Delicate Bunny Whiskers
         # -------------------------------------------------------------------------
         whisker_wiggle = math.sin(self.anim_tick * 0.3) * 1.5 if not is_sleeping else 0.0
         # Left Whiskers
-        self.canvas.create_line(cx - 20, cy + 3, cx - 38, cy + 1 + whisker_wiggle, fill=OUTLINE_COLOR, width=1.5)
-        self.canvas.create_line(cx - 20, cy + 7, cx - 36, cy + 9 - whisker_wiggle, fill=OUTLINE_COLOR, width=1.5)
+        self.canvas.create_line(face_cx - 20, cy + 3, face_cx - 38, cy + 1 + whisker_wiggle, fill=OUTLINE_COLOR, width=1.5)
+        self.canvas.create_line(face_cx - 20, cy + 7, face_cx - 36, cy + 9 - whisker_wiggle, fill=OUTLINE_COLOR, width=1.5)
         # Right Whiskers
-        self.canvas.create_line(cx + 20, cy + 3, cx + 38, cy + 1 + whisker_wiggle, fill=OUTLINE_COLOR, width=1.5)
-        self.canvas.create_line(cx + 20, cy + 7, cx + 36, cy + 9 - whisker_wiggle, fill=OUTLINE_COLOR, width=1.5)
+        self.canvas.create_line(face_cx + 20, cy + 3, face_cx + 38, cy + 1 + whisker_wiggle, fill=OUTLINE_COLOR, width=1.5)
+        self.canvas.create_line(face_cx + 20, cy + 7, face_cx + 36, cy + 9 - whisker_wiggle, fill=OUTLINE_COLOR, width=1.5)
 
         # -------------------------------------------------------------------------
-        # 8. Dynamic Mouse Pupil Tracking
+        # 9. Dynamic Mouse Pupil Tracking
         # -------------------------------------------------------------------------
-        dist = math.hypot(mouse_rel_x, mouse_rel_y) or 1.0
         pupil_max = 4.5
         pupil_x = (mouse_rel_x / dist) * min(pupil_max, dist * 0.07)
         pupil_y = (mouse_rel_y / dist) * min(pupil_max, dist * 0.07)
 
         # -------------------------------------------------------------------------
-        # 9. Expressive Anime Eyes
+        # 10. Expressive Anime Eyes
         # -------------------------------------------------------------------------
-        eye_lx = cx - 14
-        eye_rx = cx + 14
+        eye_lx = face_cx - 14
+        eye_rx = face_cx + 14
         eye_y = cy - 7
 
         if is_sleeping:
@@ -344,7 +369,7 @@ class CanvasRenderer:
         nose_y = cy + 2
         # Tiny pink nose
         self.canvas.create_polygon(
-            [cx - 3.5, nose_y, cx + 3.5, nose_y, cx, nose_y + 3.5],
+            [face_cx - 3.5, nose_y, face_cx + 3.5, nose_y, face_cx, nose_y + 3.5],
             fill=NOSE_COLOR,
             outline="",
             tags="nose"
@@ -352,12 +377,12 @@ class CanvasRenderer:
 
         if state == State.EXCITED or state == State.DANCING:
             # Open happy smiling mouth
-            self.canvas.create_oval(cx - 5, nose_y + 5, cx + 5, nose_y + 13, fill="#FF6B6B", outline=OUTLINE_COLOR, width=1.5)
+            self.canvas.create_oval(face_cx - 5, nose_y + 5, face_cx + 5, nose_y + 13, fill="#FF6B6B", outline=OUTLINE_COLOR, width=1.5)
         else:
             # Classic bunny split lip (:3 smile)
-            self.canvas.create_line(cx, nose_y + 3.5, cx, nose_y + 6.5, fill=OUTLINE_COLOR, width=1.5)
-            self.canvas.create_arc(cx - 8, nose_y + 2.5, cx, nose_y + 9.5, start=200, extent=140, style=tk.ARC, width=1.5, outline=OUTLINE_COLOR)
-            self.canvas.create_arc(cx, nose_y + 2.5, cx + 8, nose_y + 9.5, start=200, extent=140, style=tk.ARC, width=1.5, outline=OUTLINE_COLOR)
+            self.canvas.create_line(face_cx, nose_y + 3.5, face_cx, nose_y + 6.5, fill=OUTLINE_COLOR, width=1.5)
+            self.canvas.create_arc(face_cx - 8, nose_y + 2.5, face_cx, nose_y + 9.5, start=200, extent=140, style=tk.ARC, width=1.5, outline=OUTLINE_COLOR)
+            self.canvas.create_arc(face_cx, nose_y + 2.5, face_cx + 8, nose_y + 9.5, start=200, extent=140, style=tk.ARC, width=1.5, outline=OUTLINE_COLOR)
 
         # -------------------------------------------------------------------------
         # 11. Render Active Floating Particles

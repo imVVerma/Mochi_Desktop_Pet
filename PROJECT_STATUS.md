@@ -18,9 +18,12 @@ Desktop Pet has been transformed from an exploratory, fragmented Tkinter prototy
    - White puffball cotton tail with subtle wagging.
    - Animated stepping front and back paws with realistic step-phase pacing.
    - Anime-sparkle eyes with dual layered highlights, pink nose, bunny `:3` split mouth, whiskers, and rosy cheeks.
-2. **Cozy Corner Stationing (Bottom-Right Docking):**
-   - Configurable `"home_corner": "bottom_right"`.
-   - Autonomous homing behavior (`RETURNING_HOME` FSM state) smoothly brings the bunny back above the taskbar clock/tray to perch and roost when not actively wandering or playing.
+2. **Cozy Corner Stationing (Bottom-Right Docking & Codex-Style Loafing):**
+   - High-DPI primary monitor awareness: initialized Win32 Per-Monitor DPI awareness before measuring `SPI_GETWORKAREA`, locking coordinates directly to the true bottom-right taskbar corner (`x=1755, y=1000` above 60px taskbar on $1920\times 1200$).
+   - Idle breathing cycle: continuous sinusoidal volume-conserving breathing loop ($\pm 1.5\%$ vertical radius expansion/compression) so the pet feels alive even when resting quietly.
+   - Grounded corner loaf: when docked at home, the bunny transitions smoothly into a cozy roosting loaf with tucked front paws and draped floppy ears.
+   - Cursor curiosity: head angles and facial features subtly tilt towards cursor when the mouse approaches within 180px.
+   - Arched hop steps: returning home features rhythmic squash-and-stretch hopping rather than flat sliding.
 3. **Foolproof Standalone Packaging & Crash Proofing:**
    - Single-instance Win32 Mutex (`DesktopPet_SingleInstance_Mutex_Global`) guarantees no duplicate processes or popup cascades.
    - Tkinter `report_callback_exception` redirected to safe `%APPDATA%\DesktopPet\desktop_pet.log` with zero OS modal dialog popups.

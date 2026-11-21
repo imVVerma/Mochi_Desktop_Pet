@@ -90,6 +90,9 @@ def main():
         logger.info("Another instance of Desktop Pet is already running. Exiting cleanly without error.")
         sys.exit(0)
 
+    from core.physics import enable_high_dpi_awareness
+    enable_high_dpi_awareness()
+
     from core.engine import PetEngine
 
     parser = argparse.ArgumentParser(description="Desktop Pet - Virtual Desk Companion")

@@ -14,14 +14,39 @@ SM_CYVIRTUALSCREEN = 79
 SPI_GETWORKAREA = 48
 
 
+def enable_high_dpi_awareness() -> None:
+    """Enables Windows Per-Monitor DPI awareness to eliminate scaling blurriness and coordinate mismatch."""
+    if sys.platform == "win32":
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)  # Per-monitor DPI aware v2
+        except Exception:
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(1)  # Per-monitor DPI aware v1
+            except Exception:
+                try:
+                    ctypes.windll.user32.SetProcessDPIAware()
+                except Exception:
+                    pass
+
+
 class Bounds:
     """Represents a virtual screen or monitor bounding rectangle."""
 
-    def __init__(self, min_x: int = 0, min_y: int = 0, max_x: int = 1920, max_y: int = 1080):
+    def __init__(
+        self,
+        min_x: int = 0,
+        min_y: int = 0,
+        max_x: int = 1920,
+        max_y: int = 1080,
+        primary_right: Optional[int] = None,
+        primary_bottom: Optional[int] = None,
+    ):
         self.min_x = min_x
         self.min_y = min_y
         self.max_x = max_x
         self.max_y = max_y
+        self.primary_right = primary_right if primary_right is not None else max_x
+        self.primary_bottom = primary_bottom if primary_bottom is not None else max_y
 
     @property
     def width(self) -> int:
@@ -39,12 +64,29 @@ def get_virtual_screen_bounds() -> Bounds:
     """Discovers the complete virtual screen bounding rectangle across all monitors (supports negative coords)."""
     if sys.platform == "win32":
         try:
+            enable_high_dpi_awareness()
             min_x = ctypes.windll.user32.GetSystemMetrics(SM_XVIRTUALSCREEN)
             min_y = ctypes.windll.user32.GetSystemMetrics(SM_YVIRTUALSCREEN)
             width = ctypes.windll.user32.GetSystemMetrics(SM_CXVIRTUALSCREEN)
             height = ctypes.windll.user32.GetSystemMetrics(SM_CYVIRTUALSCREEN)
+
+            class RECT(ctypes.Structure):
+                _fields_ = [
+                    ("left", ctypes.c_long),
+                    ("top", ctypes.c_long),
+                    ("right", ctypes.c_long),
+                    ("bottom", ctypes.c_long),
+                ]
+
+            rect = RECT()
+            primary_right = None
+            primary_bottom = None
+            if ctypes.windll.user32.SystemParametersInfoW(SPI_GETWORKAREA, 0, ctypes.byref(rect), 0):
+                primary_right = int(rect.right)
+                primary_bottom = int(rect.bottom)
+
             if width > 0 and height > 0:
-                return Bounds(min_x, min_y, min_x + width, min_y + height)
+                return Bounds(min_x, min_y, min_x + width, min_y + height, primary_right, primary_bottom)
         except Exception as e:
             logger.debug("Failed querying Win32 virtual screen metrics: %s", e)
 
@@ -119,13 +161,16 @@ class PhysicsEngine:
     @property
     def ground_y(self) -> float:
         """Effective ground level atop taskbar."""
+        if hasattr(self.bounds, "primary_bottom") and self.bounds.primary_bottom < self.bounds.max_y:
+            return float(self.bounds.primary_bottom - self.height)
         return float(self.bounds.max_y - self.taskbar_height - self.height)
 
     @property
     def home_x(self) -> float:
         """Calculates anchor coordinate for the home corner."""
         if self.home_corner == "bottom_right":
-            return float(self.bounds.max_x - self.width - 25)
+            target_right = getattr(self.bounds, "primary_right", self.bounds.max_x)
+            return float(target_right - self.width - 25)
         elif self.home_corner == "bottom_left":
             return float(self.bounds.min_x + 25)
         return self.x
@@ -137,15 +182,23 @@ class PhysicsEngine:
         return abs(self.x - self.home_x) <= threshold and self.is_grounded
 
     def step_towards_home(self, speed: float = 2.5) -> int:
-        """Steps horizontally towards home corner. Returns direction (1=right, -1=left, 0=arrived)."""
+        """Steps horizontally towards home corner with arched hopping animation. Returns direction (1=right, -1=left, 0=arrived)."""
         if self.home_corner == "none" or self.is_held:
             return 0
         diff = self.home_x - self.x
         if abs(diff) <= speed:
             self.x = self.home_x
+            self.squash_x = 0.0
             return 0
         direction = 1 if diff > 0 else -1
         self.x += direction * speed
+        # Add arched hop squash/stretch rhythm during homing
+        self.hop_phase = (getattr(self, "hop_phase", 0.0) + 0.42) % (2 * math.pi)
+        hop_arc = math.sin(self.hop_phase)
+        if hop_arc > 0:
+            self.squash_x = -hop_arc * 2.8  # stretch vertically while leaping
+        else:
+            self.squash_x = -hop_arc * 2.0  # squash slightly on landing
         self.clamp_position()
         return direction
 

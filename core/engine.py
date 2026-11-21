@@ -206,6 +206,7 @@ class PetEngine:
             vel_speed = math.hypot(self.physics.vx, self.physics.vy)
 
             # Procedural canvas rendering
+            is_docked = self.physics.is_near_home(threshold=30.0)
             self.renderer.draw(
                 state=self.fsm.state,
                 stats=self.stats,
@@ -216,6 +217,7 @@ class PetEngine:
                 velocity_speed=vel_speed,
                 auto_color=self.config_manager.get("auto_color", True),
                 base_color=self.config_manager.get("base_color", "#FFB6C1"),
+                is_docked=is_docked,
             )
         except Exception as e:
             logger.error("Error during update_loop (throttling): %s", e)
