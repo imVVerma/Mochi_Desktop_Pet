@@ -1,8 +1,8 @@
-import ctypes
 import logging
 import math
 import sys
 from typing import Tuple, Optional, List
+from core.pal.display import DisplayMetrics
 
 logger = logging.getLogger("DesktopPet.Physics")
 
@@ -62,58 +62,13 @@ class Bounds:
 
 def get_virtual_screen_bounds() -> Bounds:
     """Discovers the complete virtual screen bounding rectangle across all monitors (supports negative coords)."""
-    if sys.platform == "win32":
-        try:
-            enable_high_dpi_awareness()
-            min_x = ctypes.windll.user32.GetSystemMetrics(SM_XVIRTUALSCREEN)
-            min_y = ctypes.windll.user32.GetSystemMetrics(SM_YVIRTUALSCREEN)
-            width = ctypes.windll.user32.GetSystemMetrics(SM_CXVIRTUALSCREEN)
-            height = ctypes.windll.user32.GetSystemMetrics(SM_CYVIRTUALSCREEN)
-
-            class RECT(ctypes.Structure):
-                _fields_ = [
-                    ("left", ctypes.c_long),
-                    ("top", ctypes.c_long),
-                    ("right", ctypes.c_long),
-                    ("bottom", ctypes.c_long),
-                ]
-
-            rect = RECT()
-            primary_right = None
-            primary_bottom = None
-            if ctypes.windll.user32.SystemParametersInfoW(SPI_GETWORKAREA, 0, ctypes.byref(rect), 0):
-                primary_right = int(rect.right)
-                primary_bottom = int(rect.bottom)
-
-            if width > 0 and height > 0:
-                return Bounds(min_x, min_y, min_x + width, min_y + height, primary_right, primary_bottom)
-        except Exception as e:
-            logger.debug("Failed querying Win32 virtual screen metrics: %s", e)
-
-    return Bounds(0, 0, 1920, 1080)
+    min_x, min_y, max_x, max_y, pr, pb = DisplayMetrics.get_screen_bounds()
+    return Bounds(min_x, min_y, max_x, max_y, pr, pb)
 
 
 def get_primary_taskbar_height(screen_h: int) -> int:
-    """Estimates the taskbar height on the primary display."""
-    if sys.platform == "win32":
-        try:
-            class RECT(ctypes.Structure):
-                _fields_ = [
-                    ("left", ctypes.c_long),
-                    ("top", ctypes.c_long),
-                    ("right", ctypes.c_long),
-                    ("bottom", ctypes.c_long),
-                ]
-
-            rect = RECT()
-            if ctypes.windll.user32.SystemParametersInfoW(SPI_GETWORKAREA, 0, ctypes.byref(rect), 0):
-                work_bottom = rect.bottom
-                if screen_h > work_bottom > 0:
-                    return screen_h - work_bottom
-        except Exception as e:
-            logger.debug("Failed querying Win32 work area: %s", e)
-
-    return 45  # Standard Windows taskbar height default
+    """Estimates the taskbar or dock height on the primary display."""
+    return DisplayMetrics.get_dock_or_taskbar_height(screen_h)
 
 
 class PhysicsEngine:

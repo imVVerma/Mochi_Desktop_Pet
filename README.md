@@ -3,7 +3,6 @@
 > A delightful, lifelike, cute, and genuinely useful virtual desktop companion for Windows (macOS, Linux & Mobile coming soon!).
 
 [![Release](https://img.shields.io/badge/Release-v1.0.0-FFB6C1?style=for-the-badge&logo=windows)](https://github.com/imVVerma/Mochi_Desktop_Pet/releases/latest)
-[![Tests](https://img.shields.io/badge/Tests-26%2F26%20Passing-brightgreen?style=for-the-badge)](https://github.com/imVVerma/Mochi_Desktop_Pet/actions)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20(Cross--Platform%20Ready)-blue?style=for-the-badge)](https://github.com/imVVerma/Mochi_Desktop_Pet/blob/main/ROADMAP.md)
 
@@ -96,7 +95,7 @@ python main.py
 ```bash
 python -m pytest
 ```
-*All 26 unit tests cover configuration recovery, state transitions, physics bounds, global hotkeys, and GUI dialog actions.*
+*All 29 unit tests cover configuration recovery, state transitions, physics bounds, global hotkeys, platform abstraction layer (PAL), and GUI dialog actions.*
 
 ### Building the Standalone Executable
 ```bash
@@ -120,8 +119,12 @@ Mochi_Desktop_Pet/
 ├── .github/workflows/       # GitHub Actions CI/CD (automated Windows executable release)
 ├── build/                   # Icon generator and Windows shortcut installer scripts
 ├── core/                    # Engine, Physics kinematics, FSM, Hotkeys, and Config manager
+│   └── pal/                 # Platform Abstraction Layer (DisplayMetrics, IPC, Window Transparency)
 ├── dist/                    # Standalone zero-install DesktopPet.exe and local config
-├── tests/                   # 26 automated unit tests (100% green test suite)
+├── mobile/                  # Mobile companion (Android Floating Service & Flutter companion)
+│   ├── android_overlay/     # Android SYSTEM_ALERT_WINDOW floating pet service
+│   └── flutter_companion/   # Cross-platform Flutter interactive companion
+├── tests/                   # 29 automated unit tests (100% green test suite)
 ├── ui/                      # Tkinter canvas renderer, Window overlay, Tray, and Settings Dialog
 ├── main.py                  # Single-instance application entry point
 ├── config.json              # Application configuration

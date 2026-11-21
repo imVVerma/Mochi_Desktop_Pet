@@ -15,9 +15,9 @@ echo [2/3] Compiling standalone executable with PyInstaller...
     --add-data "config.json;." ^
     --hidden-import "PIL" ^
     --hidden-import "pystray" ^
+    --hidden-import "pystray._win32" ^
     --clean ^
     main.py
 
 echo [3/3] Build finished! Executable available at dist\DesktopPet.exe
 echo ===================================================
-pause

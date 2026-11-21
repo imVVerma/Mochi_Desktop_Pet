@@ -1,10 +1,10 @@
-import ctypes
 import logging
 import sys
 import threading
 import tkinter as tk
 from typing import Callable, Dict, Optional, Tuple
 from core.hotkeys import GlobalHotkeyManager
+from core.pal.window import apply_dpi_awareness, configure_transparent_window
 from core.physics import Bounds, get_virtual_screen_bounds, get_primary_taskbar_height
 
 logger = logging.getLogger("DesktopPet.Window")
@@ -85,12 +85,7 @@ class PetWindow:
 
         self.root.report_callback_exception = _suppress_tk_exception
 
-        self.root.overrideredirect(True)
-        self.root.attributes("-topmost", True)
-        self.root.config(bg=self.transparent_color)
-
-        if sys.platform == "win32":
-            self.root.wm_attributes("-transparentcolor", self.transparent_color)
+        configure_transparent_window(self.root, self.transparent_color)
 
         # Vector Canvas
         self.canvas = tk.Canvas(

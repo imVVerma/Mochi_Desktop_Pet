@@ -21,51 +21,18 @@ if sys.stderr is None:
     sys.stderr = open(os.devnull, "w", encoding="utf-8")
 
 
-class SingleInstanceLock:
-    """Ensures only one instance of Desktop Pet runs at a time using a named Windows Mutex,
-    and signals the running instance to toggle visibility (open/close) when triggered again."""
+from core.pal.ipc import CrossPlatformInstanceLock
+
+
+class SingleInstanceLock(CrossPlatformInstanceLock):
+    """Cross-platform single-instance mutex and IPC toggle for Windows, macOS, and Linux."""
 
     def __init__(
         self,
         name: str = "DesktopPet_SingleInstance_Mutex_Global",
         event_name: str = "DesktopPet_ToggleEvent_Global",
     ):
-        self.name = name
-        self.event_name = event_name
-        self.mutex = None
-        self.toggle_event = None
-        self.already_running = False
-
-        if sys.platform == "win32":
-            try:
-                self.mutex = ctypes.windll.kernel32.CreateMutexW(None, False, self.name)
-                # ERROR_ALREADY_EXISTS = 183
-                if ctypes.windll.kernel32.GetLastError() == 183:
-                    self.already_running = True
-                    # Signal existing instance to toggle open/close
-                    EVENT_MODIFY_STATE = 0x0002
-                    h_event = ctypes.windll.kernel32.OpenEventW(EVENT_MODIFY_STATE, False, self.event_name)
-                    if h_event:
-                        ctypes.windll.kernel32.SetEvent(h_event)
-                        ctypes.windll.kernel32.CloseHandle(h_event)
-                else:
-                    self.toggle_event = ctypes.windll.kernel32.CreateEventW(None, False, False, self.event_name)
-            except Exception:
-                self.already_running = False
-
-    def release(self):
-        if self.toggle_event and sys.platform == "win32":
-            try:
-                ctypes.windll.kernel32.CloseHandle(self.toggle_event)
-            except Exception:
-                pass
-            self.toggle_event = None
-        if self.mutex and sys.platform == "win32":
-            try:
-                ctypes.windll.kernel32.CloseHandle(self.mutex)
-            except Exception:
-                pass
-            self.mutex = None
+        super().__init__(app_id=name)
 
 
 def setup_logging():
