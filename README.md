@@ -2,6 +2,12 @@
 
 > A delightful, lifelike, cute, and genuinely useful virtual desktop companion for Windows.
 
+## 📥 Download Mochi (Zero-Setup)
+No Python, terminal, or installation required!
+* 🪟 **[Download DesktopPet.exe for Windows](https://github.com/imVVerma/Mochi_Desktop_Pet/releases/latest/download/DesktopPet.exe)** *(Double-click to run! Press `Alt+Q` to summon or dismiss)*
+* 🍏 **macOS** & 🐧 **Linux**: In active development
+* 📱 **Mobile (iOS & Android)**: Wispr Flow-style floating companion & Dynamic Island in progress!
+
 Desktop Pet is a lightweight, zero-install desktop companion built with Python and Tkinter. Floating framelessly on top of all your application windows, the pet features a procedural vector **Floppy Bunny** character (infinitely scalable, zero bitmap sprite dependencies) with dynamic floppy ear physics, cozy bottom-right corner docking above the taskbar, emotional states, circadian sleep cycles, and real-world productivity assistance.
 
 ---
