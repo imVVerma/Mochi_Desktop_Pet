@@ -1,8 +1,9 @@
 import pytest
+import tkinter as tk
 from ui.settings_dialog import SettingsDialog
 
 
-def test_settings_dialog_save():
+def test_settings_dialog_end_to_end():
     saved_data = {}
 
     def mock_save(data):
@@ -20,17 +21,34 @@ def test_settings_dialog_save():
         "wellness_reminders": {"enabled": True, "interval_minutes": 20},
     }
 
-    import tkinter as tk
     root = tk.Tk()
     root.withdraw()
 
     dialog = SettingsDialog(parent=root, config_data=test_config, on_save=mock_save)
 
-    # Modify some fields in dialog
+    # 1. Test Swatch Selection & Visual checkmarks without shrinking
+    dialog._select_swatch("#D0BDF4")
+    assert dialog.var_color.get() == "#D0BDF4"
+
+    lavender_card = dialog.swatch_cards["#D0BDF4"]
+    pink_card = dialog.swatch_cards["#FFB6C1"]
+    assert lavender_card[1].cget("text") == "✓"
+    assert pink_card[1].cget("text") == ""
+
+    # 2. Test flexible hotkey selection without forced Alt
+    dialog._set_hotkey("ctrl+space")
+    assert dialog.var_hotkey.get() == "ctrl+space"
+    assert "[Ctrl] + [Space]" in dialog.lbl_hotkey_caps.cget("text")
+
+    dialog._set_hotkey("f8")
+    assert dialog.var_hotkey.get() == "f8"
+    assert "[F8]" in dialog.lbl_hotkey_caps.cget("text")
+
+    # 3. Test modifying attributes and saving
     dialog.var_name.set("BunnyHop")
-    dialog.var_color.set("#A0C4FF")
+    dialog._select_swatch("#A0C4FF")
     dialog.var_scale.set(1.2)
-    dialog.var_hotkey.set("alt+z")
+    dialog._set_hotkey("ctrl+shift+b")
 
     # Trigger save
     dialog._save_and_apply()
@@ -38,6 +56,6 @@ def test_settings_dialog_save():
     assert saved_data.get("pet_name") == "BunnyHop"
     assert saved_data.get("base_color") == "#A0C4FF"
     assert saved_data.get("scale") == 1.2
-    assert saved_data.get("hotkeys", {}).get("toggle_visibility") == "alt+z"
+    assert saved_data.get("hotkeys", {}).get("toggle_visibility") == "ctrl+shift+b"
 
     root.destroy()

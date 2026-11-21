@@ -61,7 +61,7 @@ class PetFSM:
         elif new_state == State.SLEEPING:
             self.state_duration_ticks = 200  # Will sleep until recharged or woken
         elif new_state == State.RETURNING_HOME:
-            self.state_duration_ticks = 150
+            self.state_duration_ticks = 800  # Generous duration to cross multi-monitor screens
             self.direction = 1 if self.physics.home_x > self.physics.x else -1
 
     def on_mouse_press(self) -> None:
@@ -140,11 +140,12 @@ class PetFSM:
 
         # Returning Home Motion
         if self.state == State.RETURNING_HOME:
-            self.stats.drain_energy(0.03)
-            step_dir = self.physics.step_towards_home(self.walk_speed * 1.1)
+            self.stats.drain_energy(0.02)
+            step_dir = self.physics.step_towards_home(self.walk_speed * 1.25)
             if step_dir != 0:
                 self.direction = step_dir
-            if self.physics.is_near_home(threshold=25.0) or self.state_ticks >= self.state_duration_ticks:
+            if self.physics.is_near_home(threshold=20.0) or step_dir == 0:
+                self.physics.x = self.physics.home_x
                 if self.stats.focus_active:
                     self.transition_to(State.FOCUS)
                 elif self.stats.is_circadian_bedtime() or self.stats.is_user_idle():
@@ -170,7 +171,7 @@ class PetFSM:
         # Inactivity & Bedtime Corner Docking Invariant:
         # After moments of inactivity or at bedtime, Mochi returns home to dock in the bottom-right corner
         if self.state not in [State.SLEEPING, State.TIRED, State.FOCUS, State.RETURNING_HOME]:
-            if not self.physics.is_near_home(threshold=25.0):
+            if not self.physics.is_near_home(threshold=20.0):
                 if self.stats.is_inactive_for_docking() or self.stats.is_circadian_bedtime() or self.stats.is_user_idle():
                     self.transition_to(State.RETURNING_HOME)
                     return
@@ -211,10 +212,14 @@ class PetFSM:
         """Selects the next behavior based on personality, happiness, and curiosity."""
         # If user is inactive, prefer to return home or remain docked in cozy corner loaf
         if self.stats.is_inactive_for_docking():
-            if not self.physics.is_near_home(threshold=25.0):
+            if not self.physics.is_near_home(threshold=20.0):
                 self.transition_to(State.RETURNING_HOME)
             else:
-                self.transition_to(State.IDLE)
+                self.physics.x = self.physics.home_x
+                if self.stats.is_circadian_bedtime() or self.stats.is_user_idle():
+                    self.transition_to(State.SLEEPING)
+                else:
+                    self.transition_to(State.IDLE)
             return
 
         choices = [State.IDLE, State.WANDERING]

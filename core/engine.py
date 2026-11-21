@@ -246,7 +246,8 @@ class PetEngine:
             rel_my = my - center_y
             dist = math.hypot(rel_mx, rel_my)
 
-            if dist < 120.0:
+            # Only hovering directly over Mochi's physical body triggers direct interaction
+            if dist < 60.0:
                 self.stats.record_interaction()
 
             self.fsm.on_mouse_proximity(dist)

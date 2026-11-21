@@ -85,6 +85,7 @@ class PhysicsEngine:
         ground_friction: float = 0.85,
         bounce_damping: float = 0.40,
         home_corner: str = "bottom_right",
+        corner_offset_x: int = 15,
     ):
         self.width = width
         self.height = height
@@ -95,8 +96,9 @@ class PhysicsEngine:
         self.ground_friction = ground_friction
         self.bounce_damping = bounce_damping
         self.home_corner = home_corner
+        self.corner_offset_x = corner_offset_x
 
-        # Position and motion - start at home corner
+        # Position and motion - start directly docked at home corner
         self.x: float = float(self.home_x if home_corner != "none" else self.bounds.max_x - 220)
         self.y: float = float(self.ground_y)
         self.vx: float = 0.0
@@ -117,20 +119,21 @@ class PhysicsEngine:
     def ground_y(self) -> float:
         """Effective ground level atop taskbar."""
         if hasattr(self.bounds, "primary_bottom") and self.bounds.primary_bottom < self.bounds.max_y:
-            return float(self.bounds.primary_bottom - self.height)
-        return float(self.bounds.max_y - self.taskbar_height - self.height)
+            return float(self.bounds.primary_bottom - self.height + 12)
+        return float(self.bounds.max_y - self.taskbar_height - self.height + 12)
 
     @property
     def home_x(self) -> float:
         """Calculates anchor coordinate for the home corner."""
         if self.home_corner == "bottom_right":
             target_right = getattr(self.bounds, "primary_right", self.bounds.max_x)
-            return float(target_right - self.width - 25)
+            # Snug alignment in absolute bottom-right corner above system clock
+            return float(target_right - self.width + self.corner_offset_x)
         elif self.home_corner == "bottom_left":
-            return float(self.bounds.min_x + 25)
+            return float(self.bounds.min_x - self.corner_offset_x)
         return self.x
 
-    def is_near_home(self, threshold: float = 35.0) -> bool:
+    def is_near_home(self, threshold: float = 25.0) -> bool:
         """Returns True if the pet is resting in or near its home corner."""
         if self.home_corner == "none":
             return False
@@ -166,7 +169,8 @@ class PhysicsEngine:
     def clamp_position(self) -> None:
         """Clamps the pet inside screen bounds, accounting for multi-monitor / negative coordinates."""
         min_allowed_x = float(self.bounds.min_x)
-        max_allowed_x = float(self.bounds.max_x - self.width)
+        # Allow the transparent padding to reach the absolute corner
+        max_allowed_x = float(self.bounds.max_x - self.width + self.corner_offset_x)
         min_allowed_y = float(self.bounds.min_y)
         max_allowed_y = float(self.ground_y)
 
