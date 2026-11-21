@@ -1,0 +1,37 @@
+{
+  "pet_name": "Mochi",
+  "scale": 1.0,
+  "base_color": "#FFB6C1",
+  "auto_color": true,
+  "eye_color": "#2C3E50",
+  "walk_speed": 3.0,
+  "taskbar_height": 45,
+  "transparent_color": "#000001",
+  "sound_enabled": false,
+  "focus_mode": {
+    "work_duration_minutes": 25,
+    "break_duration_minutes": 5,
+    "auto_break": true
+  },
+  "wellness_reminders": {
+    "enabled": true,
+    "interval_minutes": 20,
+    "messages": [
+      "Time to drink some water! 💧",
+      "Look 20 feet away for 20 seconds! 👁️",
+      "Roll your shoulders and stretch! 🧘",
+      "Take a slow deep breath in... and out. 🌸",
+      "Posture check! Sit up comfortably. 🪑"
+    ]
+  },
+  "circadian": {
+    "bedtime_hour": 23,
+    "wake_hour": 7,
+    "idle_sleep_seconds": 180
+  },
+  "hotkeys": {
+    "toggle_visibility": "ctrl+shift+b",
+    "toggle_focus": "ctrl+shift+f",
+    "pet": "ctrl+shift+p"
+  }
+}
