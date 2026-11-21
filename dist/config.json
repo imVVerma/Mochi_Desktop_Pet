@@ -1,5 +1,7 @@
 {
   "pet_name": "Mochi",
+  "species": "bunny",
+  "home_corner": "bottom_right",
   "scale": 1.0,
   "base_color": "#FFB6C1",
   "auto_color": true,
@@ -17,20 +19,21 @@
     "enabled": true,
     "interval_minutes": 20,
     "messages": [
-      "Time to drink some water! 💧",
-      "Look 20 feet away for 20 seconds! 👁️",
-      "Roll your shoulders and stretch! 🧘",
-      "Take a slow deep breath in... and out. 🌸",
-      "Posture check! Sit up comfortably. 🪑"
+      "Time to drink some water! \ud83d\udca7",
+      "Look 20 feet away for 20 seconds! \ud83d\udc41\ufe0f",
+      "Roll your shoulders and stretch! \ud83e\uddd8",
+      "Take a slow deep breath in... and out. \ud83c\udf38",
+      "Posture check! Sit up comfortably. \ud83e\ude91"
     ]
   },
   "circadian": {
     "bedtime_hour": 23,
     "wake_hour": 7,
-    "idle_sleep_seconds": 180
+    "idle_sleep_seconds": 180,
+    "idle_dock_seconds": 15
   },
   "hotkeys": {
-    "toggle_visibility": "ctrl+shift+b",
+    "toggle_visibility": "alt+q",
     "toggle_focus": "ctrl+shift+f",
     "pet": "ctrl+shift+p"
   }

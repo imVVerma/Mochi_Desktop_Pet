@@ -54,3 +54,15 @@ def test_pet_engine_instantiation_headless(mock_tkinter, tmp_path):
 
     engine.exit_app()
     assert engine.is_running is False
+
+
+def test_pet_engine_start_with_toggle_event(mock_tkinter, tmp_path):
+    """Verify engine.start() initializes threads and mainloop without any NameError or crash."""
+    config_file = tmp_path / "engine_start_test_config.json"
+    from core.engine import PetEngine
+
+    engine = PetEngine(config_path=str(config_file), toggle_event=123)
+    # Mock mainloop to immediately exit so test doesn't block
+    engine.window.root.mainloop = lambda: engine.exit_app()
+    engine.start()
+    assert engine.is_running is False
