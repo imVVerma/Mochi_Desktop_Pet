@@ -74,6 +74,7 @@ class PetEngine:
             on_toggle_focus=self.toggle_focus_mode,
             on_toggle_sleep=self.toggle_sleep,
             on_change_color=self.change_base_color,
+            on_change_accessory=self.change_accessory,
             on_open_preferences=lambda: self._dispatch_to_main_thread(self.open_preferences_dialog),
             on_exit=self.exit_app,
         )
@@ -161,6 +162,10 @@ class PetEngine:
         self.config_manager.set("auto_color", False, auto_save=True)
         self.tray.update_icon_color(color_hex)
         self.renderer.spawn_particle("✦", color_hex, size=14)
+
+    def change_accessory(self, acc_name: str) -> None:
+        self.config_manager.set("accessory", acc_name, auto_save=True)
+        self.renderer.spawn_particle("✨", "#FFD700", size=14)
 
     def open_preferences_dialog(self) -> None:
         """Opens the visual Preferences & Wardrobe dialog."""
@@ -286,6 +291,7 @@ class PetEngine:
                 auto_color=self.config_manager.get("auto_color", True),
                 base_color=self.config_manager.get("base_color", "#FFB6C1"),
                 is_docked=is_docked,
+                accessory=self.config_manager.get("accessory", "None"),
             )
         except Exception as e:
             logger.error("Error during update_loop (throttling): %s", e)

@@ -85,7 +85,7 @@ class PhysicsEngine:
         ground_friction: float = 0.85,
         bounce_damping: float = 0.40,
         home_corner: str = "bottom_right",
-        corner_offset_x: int = 15,
+        corner_offset_x: int = 24,
     ):
         self.width = width
         self.height = height

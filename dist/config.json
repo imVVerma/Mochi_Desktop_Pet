@@ -3,7 +3,7 @@
   "species": "bunny",
   "home_corner": "bottom_right",
   "scale": 1.0,
-  "base_color": "#FFEAA7",
+  "base_color": "#B5EAD7",
   "auto_color": true,
   "eye_color": "#2C3E50",
   "walk_speed": 3.0,

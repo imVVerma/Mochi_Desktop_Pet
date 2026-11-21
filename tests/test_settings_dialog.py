@@ -47,6 +47,7 @@ def test_settings_dialog_end_to_end():
     # 3. Test modifying attributes and saving
     dialog.var_name.set("BunnyHop")
     dialog._select_swatch("#A0C4FF")
+    dialog._select_accessory("👑 Royal Crown")
     dialog.var_scale.set(1.2)
     dialog._set_hotkey("ctrl+shift+b")
 
@@ -55,6 +56,7 @@ def test_settings_dialog_end_to_end():
 
     assert saved_data.get("pet_name") == "BunnyHop"
     assert saved_data.get("base_color") == "#A0C4FF"
+    assert saved_data.get("accessory") == "👑 Royal Crown"
     assert saved_data.get("scale") == 1.2
     assert saved_data.get("hotkeys", {}).get("toggle_visibility") == "ctrl+shift+b"
 

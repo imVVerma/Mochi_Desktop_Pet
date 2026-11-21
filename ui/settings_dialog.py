@@ -1,11 +1,12 @@
 """
 Preferences & Wardrobe GUI Dialog for Desktop Pet.
-Features modern pastel styling, live interactive avatar preview,
+Features modern pastel styling, live interactive avatar preview with accessories,
 instant keyboard hotkey recorder, flexible custom shortcuts,
 and automatic Windows Search indexing.
 """
 import copy
 import logging
+import math
 import sys
 import tkinter as tk
 from tkinter import colorchooser, ttk
@@ -24,9 +25,19 @@ PRESET_COLORS = [
     ("Midnight Berry", "#957DAD"),
 ]
 
+ACCESSORY_OPTIONS = [
+    ("🎀 Silk Ribbon", "🎀 Silk Ribbon"),
+    ("👑 Royal Crown", "👑 Royal Crown"),
+    ("🌸 Sakura Flower", "🌸 Sakura Flower"),
+    ("👓 Smart Glasses", "👓 Smart Glasses"),
+    ("🎩 Top Hat", "🎩 Gentleman Top Hat"),
+    ("🧣 Cozy Scarf", "🧣 Cozy Scarf"),
+    ("🐾 Natural", "None"),
+]
+
 
 class SettingsDialog:
-    """Delightful, modern modal Preferences & Wardrobe dialog with live preview."""
+    """Delightful, modern modal Preferences & Wardrobe dialog with live preview and outfit wardrobe."""
 
     _instance: Optional["SettingsDialog"] = None
 
@@ -48,10 +59,12 @@ class SettingsDialog:
         self.on_save = on_save
         self.is_recording_hotkey = False
         self.swatch_cards: Dict[str, Tuple[tk.Frame, tk.Label, tk.Canvas]] = {}
+        self.accessory_cards: Dict[str, Tuple[tk.Frame, tk.Label]] = {}
 
         # Config variables
         self.var_name = tk.StringVar(value=self.config_data.get("pet_name", "Mochi"))
         self.var_color = tk.StringVar(value=self.config_data.get("base_color", "#FFB6C1"))
+        self.var_accessory = tk.StringVar(value=self.config_data.get("accessory", "🎀 Silk Ribbon"))
         self.var_auto_color = tk.BooleanVar(value=self.config_data.get("auto_color", True))
         self.var_scale = tk.DoubleVar(value=self.config_data.get("scale", 1.0))
 
@@ -73,13 +86,13 @@ class SettingsDialog:
 
         # Window setup
         self.window = tk.Toplevel(parent)
-        self.window.title(f"{self.var_name.get()} — Preferences & Wardrobe 🌸")
-        self.window.geometry("560x660")
+        self.window.title(f"{self.var_name.get()} — Wardrobe & Preferences ✨")
+        self.window.geometry("570x690")
         self.window.resizable(False, False)
         self.window.attributes("-topmost", True)
         self.window.config(bg="#F6F7FB")
 
-        self._center_window(560, 660)
+        self._center_window(570, 690)
         self._build_ui()
         self.window.protocol("WM_DELETE_WINDOW", self._on_close)
 
@@ -99,7 +112,7 @@ class SettingsDialog:
         header_card.pack(fill=tk.X, padx=16, pady=(16, 10))
 
         # Live avatar preview canvas
-        self.preview_canvas = tk.Canvas(header_card, width=88, height=88, bg="#FFFFFF", highlightthickness=0)
+        self.preview_canvas = tk.Canvas(header_card, width=96, height=96, bg="#FFFFFF", highlightthickness=0)
         self.preview_canvas.pack(side=tk.LEFT, padx=(12, 16), pady=10)
         self._redraw_avatar_preview()
 
@@ -116,14 +129,14 @@ class SettingsDialog:
         )
         self.lbl_header_name.pack(anchor="w")
 
-        lbl_header_sub = tk.Label(
+        self.lbl_header_sub = tk.Label(
             info_frame,
-            text="Personalize your companion's appearance, hotkeys, and rhythm",
+            text=f"Style: {self.var_accessory.get()} • Custom Desk Companion",
             font=("Segoe UI", 9),
             bg="#FFFFFF",
             fg="#7F8C8D",
         )
-        lbl_header_sub.pack(anchor="w", pady=(2, 0))
+        self.lbl_header_sub.pack(anchor="w", pady=(2, 0))
 
         # Styled Notebook for Tabs
         style = ttk.Style(self.window)
@@ -132,15 +145,15 @@ class SettingsDialog:
         except Exception:
             pass
         style.configure("TNotebook", background="#F6F7FB")
-        style.configure("TNotebook.Tab", padding=[16, 8], font=("Segoe UI", 9, "bold"))
+        style.configure("TNotebook.Tab", padding=[18, 9], font=("Segoe UI", 9, "bold"))
         style.configure("TFrame", background="#F6F7FB")
 
         notebook = ttk.Notebook(self.window)
         notebook.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 10))
 
-        # Tab 1: Wardrobe
+        # Tab 1: Wardrobe & Outfits
         tab_wardrobe = ttk.Frame(notebook)
-        notebook.add(tab_wardrobe, text="🎨 Wardrobe")
+        notebook.add(tab_wardrobe, text="🎨 Wardrobe & Outfits")
         self._build_wardrobe_tab(tab_wardrobe)
 
         # Tab 2: Hotkeys & Search
@@ -190,48 +203,81 @@ class SettingsDialog:
         c = self.preview_canvas
         c.delete("all")
         color = self.var_color.get()
+        acc = self.var_accessory.get()
 
         # Floppy Ears (procedural vector shapes)
-        c.create_polygon([20, 42, 16, 14, 28, 8, 34, 18, 32, 42], fill=color, outline="#222228", width=2)
-        c.create_polygon([68, 42, 66, 18, 72, 8, 84, 14, 80, 42], fill=color, outline="#222228", width=2)
-        c.create_polygon([20, 36, 18, 16, 26, 12, 30, 20], fill="#FFD1DC")
-        c.create_polygon([70, 20, 74, 12, 82, 16, 80, 36], fill="#FFD1DC")
+        c.create_polygon([24, 46, 20, 16, 32, 10, 38, 20, 36, 46], fill=color, outline="#222228", width=2)
+        c.create_polygon([72, 46, 70, 20, 76, 10, 88, 16, 84, 46], fill=color, outline="#222228", width=2)
+        c.create_polygon([24, 38, 22, 18, 30, 14, 34, 22], fill="#FFD1DC")
+        c.create_polygon([74, 22, 78, 14, 86, 18, 84, 38], fill="#FFD1DC")
 
         # Chubby Bunny Body
-        c.create_oval([14, 28, 86, 84], fill=color, outline="#222228", width=2)
+        c.create_oval([16, 32, 92, 92], fill=color, outline="#222228", width=2)
         # Soft Cream Belly
-        c.create_oval([28, 48, 72, 80], fill="#FFF9F2", outline="")
+        c.create_oval([32, 54, 76, 88], fill="#FFF9F2", outline="")
 
         # Sparkle Eyes
-        c.create_oval([30, 44, 38, 54], fill="#18181D")
-        c.create_oval([32, 46, 35, 49], fill="#FFFFFF")
-        c.create_oval([62, 44, 70, 54], fill="#18181D")
-        c.create_oval([64, 46, 67, 49], fill="#FFFFFF")
+        c.create_oval([34, 48, 42, 58], fill="#18181D")
+        c.create_oval([36, 50, 39, 53], fill="#FFFFFF")
+        c.create_oval([66, 48, 74, 58], fill="#18181D")
+        c.create_oval([68, 50, 71, 53], fill="#FFFFFF")
 
         # Nose & Smile
-        c.create_polygon([48, 54, 52, 54, 50, 57], fill="#FF7597")
-        c.create_arc([44, 56, 50, 62], start=0, extent=180, style=tk.ARC, outline="#222228", width=2)
-        c.create_arc([50, 56, 56, 62], start=0, extent=180, style=tk.ARC, outline="#222228", width=2)
+        c.create_polygon([52, 58, 56, 58, 54, 61], fill="#FF7597")
+        c.create_arc([48, 60, 54, 66], start=0, extent=180, style=tk.ARC, outline="#222228", width=2)
+        c.create_arc([54, 60, 60, 66], start=0, extent=180, style=tk.ARC, outline="#222228", width=2)
 
         # Cheerful Blush
-        c.create_oval([24, 54, 32, 60], fill="#FFCCD5", outline="")
-        c.create_oval([68, 54, 76, 60], fill="#FFCCD5", outline="")
+        c.create_oval([26, 58, 34, 64], fill="#FFCCD5", outline="")
+        c.create_oval([74, 58, 82, 64], fill="#FFCCD5", outline="")
+
+        # Draw Selected Outfit / Accessory on Avatar
+        acc_lower = acc.lower()
+        if "ribbon" in acc_lower:
+            c.create_oval(18, 22, 30, 34, fill="#FF6B81", outline="#222228", width=1.5)
+            c.create_oval(30, 22, 42, 34, fill="#FF6B81", outline="#222228", width=1.5)
+            c.create_oval(26, 24, 34, 32, fill="#FF3366", outline="#222228", width=1.5)
+            c.create_line(28, 32, 22, 42, fill="#FF6B81", width=2)
+            c.create_line(32, 32, 38, 42, fill="#FF6B81", width=2)
+        elif "crown" in acc_lower:
+            crown_pts = [38, 30, 34, 14, 46, 22, 54, 10, 62, 22, 74, 14, 70, 30]
+            c.create_polygon(crown_pts, fill="#FFD700", outline="#B8860B", width=1.5)
+            c.create_oval(52, 20, 56, 24, fill="#FF1744", outline="")
+        elif "sakura" in acc_lower or "flower" in acc_lower:
+            fx, fy = 28, 26
+            for angle in [0, 72, 144, 216, 288]:
+                rad = math.radians(angle)
+                px = fx + math.cos(rad) * 6
+                py = fy + math.sin(rad) * 6
+                c.create_oval(px - 5, py - 5, px + 5, py + 5, fill="#FFB7C5", outline="#FF85A1", width=1)
+            c.create_oval(fx - 3, fy - 3, fx + 3, fy + 3, fill="#FFE082", outline="")
+        elif "glasses" in acc_lower:
+            c.create_oval(28, 44, 48, 62, outline="#2C3E50", width=2)
+            c.create_oval(60, 44, 80, 62, outline="#2C3E50", width=2)
+            c.create_line(48, 53, 60, 53, fill="#2C3E50", width=2)
+        elif "hat" in acc_lower:
+            c.create_oval(34, 28, 74, 36, fill="#2B2B2B", outline="#1A1A1A", width=1.5)
+            c.create_rectangle(42, 10, 66, 30, fill="#383838", outline="#1A1A1A", width=1.5)
+            c.create_rectangle(42, 24, 66, 30, fill="#E74C3C", outline="")
+        elif "scarf" in acc_lower:
+            c.create_oval(28, 70, 80, 84, fill="#FF9AA2", outline="#E57373", width=1.5)
+            c.create_rectangle(64, 76, 74, 94, fill="#FF9AA2", outline="#E57373", width=1.5)
 
     def _build_wardrobe_tab(self, parent: ttk.Frame) -> None:
-        card = tk.Frame(parent, bg="#FFFFFF", padx=16, pady=14, relief=tk.SOLID, bd=1)
-        card.pack(fill=tk.BOTH, expand=True, padx=4, pady=8)
+        card = tk.Frame(parent, bg="#FFFFFF", padx=16, pady=12, relief=tk.SOLID, bd=1)
+        card.pack(fill=tk.BOTH, expand=True, padx=4, pady=6)
 
         # 1. Name Input Box
-        lbl_name = tk.Label(card, text="Companion Name:", font=("Segoe UI", 9, "bold"), bg="#FFFFFF", fg="#2C3E50")
+        lbl_name = tk.Label(card, text="🐾 Companion Name:", font=("Segoe UI", 9, "bold"), bg="#FFFFFF", fg="#2C3E50")
         lbl_name.pack(anchor="w", pady=(0, 4))
 
-        name_box = tk.Frame(card, bg="#F5F6FA", relief=tk.SOLID, bd=1, padx=8, pady=4)
-        name_box.pack(fill=tk.X, pady=(0, 12))
+        name_box = tk.Frame(card, bg="#F5F6FA", relief=tk.SOLID, bd=1, padx=8, pady=3)
+        name_box.pack(fill=tk.X, pady=(0, 10))
 
         ent_name = tk.Entry(
             name_box,
             textvariable=self.var_name,
-            font=("Segoe UI", 11),
+            font=("Segoe UI", 10),
             bg="#F5F6FA",
             relief=tk.FLAT,
             bd=0,
@@ -239,15 +285,45 @@ class SettingsDialog:
         ent_name.pack(fill=tk.X, expand=True)
         ent_name.bind("<KeyRelease>", lambda e: self.lbl_header_name.config(text=f"🐾 {self.var_name.get() or 'Mochi'}"))
 
-        # 2. Modern Palette Swatch Cards (Zero shrinking, crisp active borders with checkmark)
-        lbl_colors = tk.Label(
-            card,
-            text="Skin Palette & Wardrobe Colors:",
-            font=("Segoe UI", 9, "bold"),
-            bg="#FFFFFF",
-            fg="#2C3E50",
-        )
-        lbl_colors.pack(anchor="w", pady=(0, 6))
+        # 2. Outfits & Accessories Grid
+        lbl_acc = tk.Label(card, text="👗 Outfits & Accessories:", font=("Segoe UI", 9, "bold"), bg="#FFFFFF", fg="#2C3E50")
+        lbl_acc.pack(anchor="w", pady=(0, 4))
+
+        acc_grid = tk.Frame(card, bg="#FFFFFF")
+        acc_grid.pack(fill=tk.X, pady=(0, 10))
+
+        self.accessory_cards.clear()
+        curr_acc = self.var_accessory.get()
+
+        for idx, (label, acc_id) in enumerate(ACCESSORY_OPTIONS):
+            row = idx // 4
+            col = idx % 4
+
+            a_frame = tk.Frame(acc_grid, bg="#FFFFFF", relief=tk.SOLID, bd=1, padx=6, pady=4, cursor="hand2")
+            a_frame.grid(row=row, column=col, padx=3, pady=3, sticky="nsew")
+
+            a_lbl = tk.Label(a_frame, text=label, font=("Segoe UI", 8), bg="#FFFFFF", fg="#2C3E50")
+            a_lbl.pack(side=tk.LEFT)
+
+            a_check = tk.Label(a_frame, text="✓" if acc_id == curr_acc else "", font=("Segoe UI", 8, "bold"), bg="#FFFFFF", fg="#E74C3C")
+            a_check.pack(side=tk.RIGHT)
+
+            self.accessory_cards[acc_id] = (a_frame, a_check)
+
+            def make_acc_handler(a_target):
+                return lambda e: self._select_accessory(a_target)
+
+            h = make_acc_handler(acc_id)
+            a_frame.bind("<Button-1>", h)
+            a_lbl.bind("<Button-1>", h)
+            a_check.bind("<Button-1>", h)
+
+        for c in range(4):
+            acc_grid.columnconfigure(c, weight=1)
+
+        # 3. Modern Palette Swatch Cards
+        lbl_colors = tk.Label(card, text="🎨 Skin Palette & Wardrobe Colors:", font=("Segoe UI", 9, "bold"), bg="#FFFFFF", fg="#2C3E50")
+        lbl_colors.pack(anchor="w", pady=(0, 4))
 
         palette_grid = tk.Frame(card, bg="#FFFFFF")
         palette_grid.pack(fill=tk.X, pady=(0, 8))
@@ -259,44 +335,21 @@ class SettingsDialog:
             row = idx // 4
             col = idx % 4
 
-            frame = tk.Frame(
-                palette_grid,
-                bg="#FFFFFF",
-                relief=tk.SOLID,
-                bd=1,
-                padx=6,
-                pady=5,
-                cursor="hand2",
-            )
-            frame.grid(row=row, column=col, padx=4, pady=4, sticky="nsew")
+            frame = tk.Frame(palette_grid, bg="#FFFFFF", relief=tk.SOLID, bd=1, padx=6, pady=4, cursor="hand2")
+            frame.grid(row=row, column=col, padx=3, pady=3, sticky="nsew")
 
-            # Swatch color circle canvas
-            c_preview = tk.Canvas(frame, width=18, height=18, bg="#FFFFFF", highlightthickness=0)
+            c_preview = tk.Canvas(frame, width=16, height=16, bg="#FFFFFF", highlightthickness=0)
             c_preview.pack(side=tk.LEFT, padx=(0, 4))
-            c_preview.create_oval(1, 1, 17, 17, fill=hex_code, outline="#999999", width=1)
+            c_preview.create_oval(1, 1, 15, 15, fill=hex_code, outline="#999999", width=1)
 
-            lbl_txt = tk.Label(
-                frame,
-                text=c_name,
-                font=("Segoe UI", 8),
-                bg="#FFFFFF",
-                fg="#2C3E50",
-            )
+            lbl_txt = tk.Label(frame, text=c_name, font=("Segoe UI", 8), bg="#FFFFFF", fg="#2C3E50")
             lbl_txt.pack(side=tk.LEFT)
 
-            lbl_check = tk.Label(
-                frame,
-                text="✓" if hex_code.upper() == current_active else "",
-                font=("Segoe UI", 8, "bold"),
-                bg="#FFFFFF",
-                fg="#2C3E50",
-                width=2,
-            )
+            lbl_check = tk.Label(frame, text="✓" if hex_code.upper() == current_active else "", font=("Segoe UI", 8, "bold"), bg="#FFFFFF", fg="#E74C3C")
             lbl_check.pack(side=tk.RIGHT)
 
             self.swatch_cards[hex_code.upper()] = (frame, lbl_check, c_preview)
 
-            # Bind clicks across all child elements so selection is effortless
             def make_handler(h_code):
                 return lambda e: self._select_swatch(h_code)
 
@@ -311,18 +364,18 @@ class SettingsDialog:
 
         # Custom Color Picker Row
         custom_row = tk.Frame(card, bg="#FFFFFF")
-        custom_row.pack(fill=tk.X, pady=(0, 10))
+        custom_row.pack(fill=tk.X, pady=(0, 8))
 
         btn_custom = tk.Button(
             custom_row,
-            text="Pick Custom Color 🎨",
-            font=("Segoe UI", 9),
+            text="Pick Custom 🎨",
+            font=("Segoe UI", 8),
             bg="#F5F6FA",
             relief=tk.SOLID,
             bd=1,
             cursor="hand2",
-            padx=10,
-            pady=4,
+            padx=8,
+            pady=2,
             command=self._pick_custom_color,
         )
         btn_custom.pack(side=tk.LEFT)
@@ -330,20 +383,20 @@ class SettingsDialog:
         self.lbl_custom_hex = tk.Label(
             custom_row,
             text=f"Selected: {self.var_color.get()}",
-            font=("Segoe UI", 9),
+            font=("Segoe UI", 8),
             bg="#FFFFFF",
             fg="#7F8C8D",
         )
-        self.lbl_custom_hex.pack(side=tk.LEFT, padx=(10, 0))
+        self.lbl_custom_hex.pack(side=tk.LEFT, padx=(8, 0))
 
-        # 3. Size Scale Slider
+        # 4. Size Scale Slider
         lbl_scale = tk.Label(card, text="Mochi Scale Size:", font=("Segoe UI", 9, "bold"), bg="#FFFFFF", fg="#2C3E50")
-        lbl_scale.pack(anchor="w", pady=(0, 4))
+        lbl_scale.pack(anchor="w", pady=(0, 2))
 
         scale_row = tk.Frame(card, bg="#FFFFFF")
-        scale_row.pack(fill=tk.X, pady=(0, 10))
+        scale_row.pack(fill=tk.X, pady=(0, 6))
 
-        lbl_scale_val = tk.Label(scale_row, text=f"{int(self.var_scale.get()*100)}%", font=("Segoe UI", 9, "bold"), bg="#FFFFFF", width=6)
+        lbl_scale_val = tk.Label(scale_row, text=f"{int(self.var_scale.get()*100)}%", font=("Segoe UI", 9, "bold"), bg="#FFFFFF", width=5)
         lbl_scale_val.pack(side=tk.RIGHT)
 
         slider_scale = ttk.Scale(
@@ -355,18 +408,19 @@ class SettingsDialog:
         )
         slider_scale.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        # 4. Auto-adapt Checkbox
+        # 5. Auto-adapt Checkbox
         chk_auto = tk.Checkbutton(
             card,
             text="Auto-adapt color based on emotional states and bedtime",
             variable=self.var_auto_color,
             bg="#FFFFFF",
-            font=("Segoe UI", 9),
+            font=("Segoe UI", 8),
             activebackground="#FFFFFF",
         )
         chk_auto.pack(anchor="w")
 
         self._refresh_swatch_highlights()
+        self._refresh_accessory_highlights()
 
     def _select_swatch(self, hex_code: str) -> None:
         self.var_color.set(hex_code)
@@ -374,18 +428,33 @@ class SettingsDialog:
         self._refresh_swatch_highlights()
         self._redraw_avatar_preview()
 
+    def _select_accessory(self, acc_id: str) -> None:
+        self.var_accessory.set(acc_id)
+        self.lbl_header_sub.config(text=f"Style: {acc_id} • Custom Desk Companion")
+        self._refresh_accessory_highlights()
+        self._redraw_avatar_preview()
+
     def _refresh_swatch_highlights(self) -> None:
         curr = self.var_color.get().upper()
         for hex_code, (frame, lbl_check, c_preview) in self.swatch_cards.items():
             if hex_code == curr:
-                # Highlight active swatch cleanly without changing geometry or size
-                frame.config(bg="#FFF0F5", relief=tk.SOLID, bd=2)
+                frame.config(bg="#FFF0F5", relief=tk.SOLID, bd=1, highlightthickness=1, highlightbackground="#E74C3C")
                 lbl_check.config(text="✓", fg="#E74C3C", bg="#FFF0F5")
                 c_preview.config(bg="#FFF0F5")
             else:
-                frame.config(bg="#FFFFFF", relief=tk.SOLID, bd=1)
+                frame.config(bg="#FFFFFF", relief=tk.SOLID, bd=1, highlightthickness=0)
                 lbl_check.config(text="", fg="#FFFFFF", bg="#FFFFFF")
                 c_preview.config(bg="#FFFFFF")
+
+    def _refresh_accessory_highlights(self) -> None:
+        curr = self.var_accessory.get()
+        for acc_id, (frame, lbl_check) in self.accessory_cards.items():
+            if acc_id == curr:
+                frame.config(bg="#FFF0F5", relief=tk.SOLID, bd=1, highlightthickness=1, highlightbackground="#E74C3C")
+                lbl_check.config(text="✓", fg="#E74C3C", bg="#FFF0F5")
+            else:
+                frame.config(bg="#FFFFFF", relief=tk.SOLID, bd=1, highlightthickness=0)
+                lbl_check.config(text="", fg="#FFFFFF", bg="#FFFFFF")
 
     def _pick_custom_color(self) -> None:
         color = colorchooser.askcolor(initialcolor=self.var_color.get(), title="Select Custom Wardrobe Color", parent=self.window)
@@ -493,7 +562,7 @@ class SettingsDialog:
             search_card,
             text=(
                 "🔍 Windows Search Bar Integration:\n"
-                f"• Renaming your pet above automatically updates the Windows Start Menu\n"
+                f"• Renaming your pet automatically updates the Windows Start Menu\n"
                 f"  shortcut name so searching '{self.var_name.get()}' in Windows finds it immediately!\n"
                 f"• Clicking the search result or pressing your hotkey opens/closes Mochi."
             ),
@@ -505,12 +574,12 @@ class SettingsDialog:
         lbl_search_info.pack(anchor="w")
 
     def _build_wellness_tab(self, parent: ttk.Frame) -> None:
-        """Card-based, beautifully styled presentation for Habits, Corner Docking, and Focus."""
+        """Card-based presentation for Habits, Corner Docking, and Focus."""
         container = tk.Frame(parent, bg="#F6F7FB")
         container.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
 
         # Card 1: Taskbar Corner Roosting
-        card_dock = tk.Frame(container, bg="#FFFFFF", padx=14, pady=12, relief=tk.SOLID, bd=1)
+        card_dock = tk.Frame(container, bg="#FFFFFF", padx=14, pady=10, relief=tk.SOLID, bd=1)
         card_dock.pack(fill=tk.X, pady=(0, 8))
 
         lbl_dock_title = tk.Label(
@@ -529,10 +598,10 @@ class SettingsDialog:
             bg="#FFFFFF",
             fg="#7F8C8D",
         )
-        lbl_dock_sub.pack(anchor="w", pady=(1, 6))
+        lbl_dock_sub.pack(anchor="w", pady=(1, 4))
 
         dock_row = tk.Frame(card_dock, bg="#FFFFFF")
-        dock_row.pack(fill=tk.X, pady=(0, 6))
+        dock_row.pack(fill=tk.X, pady=(0, 4))
 
         lbl_dock_val = tk.Label(dock_row, text=f"{self.var_dock_delay.get()} sec", font=("Segoe UI", 9, "bold"), bg="#F0F4F8", padx=6, pady=2)
         lbl_dock_val.pack(side=tk.RIGHT)
@@ -563,7 +632,7 @@ class SettingsDialog:
             ).pack(side=tk.LEFT, padx=3)
 
         # Card 2: Pomodoro Focus Timer
-        card_pomo = tk.Frame(container, bg="#FFFFFF", padx=14, pady=12, relief=tk.SOLID, bd=1)
+        card_pomo = tk.Frame(container, bg="#FFFFFF", padx=14, pady=10, relief=tk.SOLID, bd=1)
         card_pomo.pack(fill=tk.X, pady=(0, 8))
 
         lbl_pomo_title = tk.Label(
@@ -577,12 +646,12 @@ class SettingsDialog:
 
         lbl_pomo_sub = tk.Label(
             card_pomo,
-            text="Mochi wears reading glasses and quietly accompanies your deep work sprints.",
+            text="Mochi wears study glasses and quietly accompanies your deep work sprints.",
             font=("Segoe UI", 8),
             bg="#FFFFFF",
             fg="#7F8C8D",
         )
-        lbl_pomo_sub.pack(anchor="w", pady=(1, 6))
+        lbl_pomo_sub.pack(anchor="w", pady=(1, 4))
 
         pomo_row = tk.Frame(card_pomo, bg="#FFFFFF")
         pomo_row.pack(fill=tk.X, pady=(0, 4))
@@ -615,7 +684,7 @@ class SettingsDialog:
             ).pack(side=tk.LEFT, padx=3)
 
         # Card 3: Circadian Day / Night Schedule
-        card_sleep = tk.Frame(container, bg="#FFFFFF", padx=14, pady=12, relief=tk.SOLID, bd=1)
+        card_sleep = tk.Frame(container, bg="#FFFFFF", padx=14, pady=10, relief=tk.SOLID, bd=1)
         card_sleep.pack(fill=tk.X, pady=(0, 8))
 
         lbl_sleep_title = tk.Label(
@@ -634,27 +703,27 @@ class SettingsDialog:
             bg="#FFFFFF",
             fg="#7F8C8D",
         )
-        lbl_sleep_sub.pack(anchor="w", pady=(1, 6))
+        lbl_sleep_sub.pack(anchor="w", pady=(1, 4))
 
         sleep_row = tk.Frame(card_sleep, bg="#FFFFFF")
         sleep_row.pack(fill=tk.X)
 
         # Bedtime pill
-        bed_frame = tk.Frame(sleep_row, bg="#F5F6FA", relief=tk.SOLID, bd=1, padx=8, pady=4)
+        bed_frame = tk.Frame(sleep_row, bg="#F5F6FA", relief=tk.SOLID, bd=1, padx=8, pady=3)
         bed_frame.pack(side=tk.LEFT, padx=(0, 16))
         tk.Label(bed_frame, text="Bedtime:", font=("Segoe UI", 8, "bold"), bg="#F5F6FA", fg="#2C3E50").pack(side=tk.LEFT, padx=(0, 6))
         tk.Spinbox(bed_frame, from_=0, to=23, width=3, textvariable=self.var_bedtime, font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
         tk.Label(bed_frame, text=":00 hrs", font=("Segoe UI", 8), bg="#F5F6FA", fg="#7F8C8D").pack(side=tk.LEFT, padx=(4, 0))
 
         # Wake pill
-        wake_frame = tk.Frame(sleep_row, bg="#F5F6FA", relief=tk.SOLID, bd=1, padx=8, pady=4)
+        wake_frame = tk.Frame(sleep_row, bg="#F5F6FA", relief=tk.SOLID, bd=1, padx=8, pady=3)
         wake_frame.pack(side=tk.LEFT)
         tk.Label(wake_frame, text="Wake Time:", font=("Segoe UI", 8, "bold"), bg="#F5F6FA", fg="#2C3E50").pack(side=tk.LEFT, padx=(0, 6))
         tk.Spinbox(wake_frame, from_=0, to=23, width=3, textvariable=self.var_wake, font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
         tk.Label(wake_frame, text=":00 hrs", font=("Segoe UI", 8), bg="#F5F6FA", fg="#7F8C8D").pack(side=tk.LEFT, padx=(4, 0))
 
         # Card 4: Wellness Reminders Checkbox
-        card_wellness = tk.Frame(container, bg="#FFFFFF", padx=14, pady=10, relief=tk.SOLID, bd=1)
+        card_wellness = tk.Frame(container, bg="#FFFFFF", padx=14, pady=8, relief=tk.SOLID, bd=1)
         card_wellness.pack(fill=tk.X)
 
         chk_wellness = tk.Checkbutton(
@@ -741,6 +810,7 @@ class SettingsDialog:
         new_name = self.var_name.get().strip() or "Mochi"
         updated["pet_name"] = new_name
         updated["base_color"] = self.var_color.get()
+        updated["accessory"] = self.var_accessory.get()
         updated["auto_color"] = self.var_auto_color.get()
         updated["scale"] = round(float(self.var_scale.get()), 2)
 

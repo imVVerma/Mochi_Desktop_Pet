@@ -23,3 +23,8 @@ scratch/
 # Crash & debug logs
 *.log
 desktop_pet.log
+
+# IDE & Editor files
+.idea/
+*.iml
+.vscode/

@@ -94,6 +94,7 @@ class CanvasRenderer:
         auto_color: bool = True,
         base_color: str = "#FFB6C1",
         is_docked: bool = False,
+        accessory: str = "None",
     ) -> None:
         """Draws procedural Floppy Bunny body, ears, tail, paws, anime facial features, and speech bubble."""
         self.canvas.delete("all")
@@ -385,6 +386,11 @@ class CanvasRenderer:
             self.canvas.create_arc(face_cx, nose_y + 2.5, face_cx + 8, nose_y + 9.5, start=200, extent=140, style=tk.ARC, width=1.5, outline=OUTLINE_COLOR)
 
         # -------------------------------------------------------------------------
+        # 10.5. Outfits & Accessories (Ribbon, Crown, Sakura, Glasses, Top Hat, Scarf)
+        # -------------------------------------------------------------------------
+        self._draw_accessory(accessory, face_cx, cy, rx, ry)
+
+        # -------------------------------------------------------------------------
         # 11. Render Active Floating Particles
         # -------------------------------------------------------------------------
         for p in self.particles:
@@ -402,3 +408,84 @@ class CanvasRenderer:
         # -------------------------------------------------------------------------
         pet_top_y = cy - ry - 25.0  # Above floppy ears
         self.speech_bubble.draw(self.canvas, cx, pet_top_y)
+
+    def _draw_accessory(self, accessory: str, cx: float, cy: float, rx: float, ry: float) -> None:
+        """Procedurally renders outfits and accessories on Floppy Bunny."""
+        if not accessory or accessory in ("None", "🐾 Natural (None)", "🐾 Natural"):
+            return
+
+        acc_lower = accessory.lower()
+
+        # 1. Silk Ribbon Bow
+        if "ribbon" in acc_lower or "bow" in acc_lower:
+            rx_pos = cx - rx * 0.55
+            ry_pos = cy - ry * 0.75
+            # Ribbon loops
+            self.canvas.create_oval(rx_pos - 12, ry_pos - 8, rx_pos, ry_pos + 6, fill="#FF6B81", outline="#222228", width=1.5)
+            self.canvas.create_oval(rx_pos, ry_pos - 8, rx_pos + 12, ry_pos + 6, fill="#FF6B81", outline="#222228", width=1.5)
+            # Ribbon center knot
+            self.canvas.create_oval(rx_pos - 4, ry_pos - 4, rx_pos + 4, ry_pos + 4, fill="#FF3366", outline="#222228", width=1.5)
+            # Ribbon tails
+            self.canvas.create_line(rx_pos - 2, ry_pos + 3, rx_pos - 8, ry_pos + 14, fill="#FF6B81", width=2.5)
+            self.canvas.create_line(rx_pos + 2, ry_pos + 3, rx_pos + 8, ry_pos + 14, fill="#FF6B81", width=2.5)
+
+        # 2. Royal Golden Crown
+        elif "crown" in acc_lower:
+            top_y = cy - ry - 4
+            crown_pts = [
+                cx - 16, top_y,
+                cx - 20, top_y - 18,
+                cx - 8, top_y - 8,
+                cx, top_y - 22,
+                cx + 8, top_y - 8,
+                cx + 20, top_y - 18,
+                cx + 16, top_y,
+            ]
+            self.canvas.create_polygon(crown_pts, fill="#FFD700", outline="#B8860B", width=1.5)
+            # Ruby jewel at crown center
+            self.canvas.create_oval(cx - 3, top_y - 10, cx + 3, top_y - 4, fill="#FF1744", outline="#B8860B", width=1)
+            self.canvas.create_oval(cx - 1, top_y - 9, cx + 1, top_y - 7, fill="#FFFFFF", outline="")
+
+        # 3. Sakura Cherry Blossom
+        elif "sakura" in acc_lower or "flower" in acc_lower:
+            fx, fy = cx - rx * 0.6, cy - ry * 0.65
+            petal_r = 6.0
+            import math
+            for angle in [0, 72, 144, 216, 288]:
+                rad = math.radians(angle)
+                px = fx + math.cos(rad) * 7
+                py = fy + math.sin(rad) * 7
+                self.canvas.create_oval(px - petal_r, py - petal_r, px + petal_r, py + petal_r, fill="#FFB7C5", outline="#FF85A1", width=1)
+            # Center pollen
+            self.canvas.create_oval(fx - 3.5, fy - 3.5, fx + 3.5, fy + 3.5, fill="#FFE082", outline="#FFA000", width=1)
+
+        # 4. Smart Glasses
+        elif "glasses" in acc_lower:
+            gr = 9.5
+            gl_x = cx - 18
+            gr_x = cx + 18
+            gy = cy - 2
+            self.canvas.create_oval(gl_x - gr, gy - gr, gl_x + gr, gy + gr, outline="#2C3E50", width=2)
+            self.canvas.create_oval(gr_x - gr, gy - gr, gr_x + gr, gy + gr, outline="#2C3E50", width=2)
+            self.canvas.create_line(gl_x + gr, gy, gr_x - gr, gy, fill="#2C3E50", width=2)
+
+        # 5. Gentleman Top Hat
+        elif "hat" in acc_lower:
+            hx = cx + 4
+            hy = cy - ry - 2
+            # Brim
+            self.canvas.create_oval(hx - 22, hy - 4, hx + 22, hy + 6, fill="#2B2B2B", outline="#1A1A1A", width=1.5)
+            # Crown
+            self.canvas.create_rectangle(hx - 14, hy - 24, hx + 14, hy, fill="#383838", outline="#1A1A1A", width=1.5)
+            # Red silk ribbon band
+            self.canvas.create_rectangle(hx - 14, hy - 7, hx + 14, hy, fill="#E74C3C", outline="#C0392B", width=1)
+
+        # 6. Cozy Knit Scarf
+        elif "scarf" in acc_lower:
+            sy = cy + ry * 0.55
+            # Scarf collar around neck
+            self.canvas.create_oval(cx - 24, sy - 6, cx + 24, sy + 10, fill="#FF9AA2", outline="#E57373", width=1.5)
+            # Hanging scarf fringe
+            self.canvas.create_rectangle(cx + 8, sy + 2, cx + 18, sy + 22, fill="#FF9AA2", outline="#E57373", width=1.5)
+            self.canvas.create_line(cx + 8, sy + 22, cx + 18, sy + 22, fill="#B71C1C", width=2)
+

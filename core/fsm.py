@@ -222,6 +222,23 @@ class PetFSM:
                     self.transition_to(State.IDLE)
             return
 
+        # When stationed at its home corner, stay stationed in the corner!
+        # Mochi plays, dances, wiggles ears, and loafs right in its corner perch without wandering away.
+        if self.physics.home_corner != "none" and self.physics.is_near_home(threshold=35.0):
+            self.physics.x = self.physics.home_x
+            if self.stats.is_circadian_bedtime() or self.stats.is_user_idle():
+                self.transition_to(State.SLEEPING)
+                return
+
+            corner_choices = [State.IDLE]
+            corner_weights = [5]
+            if self.stats.happiness > 60:
+                corner_choices.extend([State.DANCING, State.JUMPING, State.EXCITED])
+                corner_weights.extend([2, 2, 2])
+            next_choice = random.choices(corner_choices, weights=corner_weights, k=1)[0]
+            self.transition_to(next_choice)
+            return
+
         choices = [State.IDLE, State.WANDERING]
         weights = [4, 5]
 

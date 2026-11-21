@@ -52,6 +52,7 @@ class PetWindow:
         on_toggle_focus: Optional[Callable[[], None]] = None,
         on_toggle_sleep: Optional[Callable[[], None]] = None,
         on_change_color: Optional[Callable[[str], None]] = None,
+        on_change_accessory: Optional[Callable[[str], None]] = None,
         on_open_preferences: Optional[Callable[[], None]] = None,
         on_exit: Optional[Callable[[], None]] = None,
     ):
@@ -69,6 +70,7 @@ class PetWindow:
         self.on_toggle_focus = on_toggle_focus
         self.on_toggle_sleep = on_toggle_sleep
         self.on_change_color = on_change_color
+        self.on_change_accessory = on_change_accessory
         self.on_open_preferences = on_open_preferences
         self.on_exit = on_exit
 
@@ -143,6 +145,22 @@ class PetWindow:
         for name, code in colors:
             color_menu.add_command(label=name, command=lambda c=code: self.on_change_color and self.on_change_color(c))
         self.menu.add_cascade(label="🎨 Quick Wardrobe Colors", menu=color_menu)
+
+        # Outfits & Accessories Submenu
+        outfit_menu = tk.Menu(self.menu, tearoff=0, bg="#FFFFFF", fg="#2C3E50", activebackground="#FFD1DC", activeforeground="#18181D")
+        outfits = [
+            ("🎀 Silk Ribbon Bow", "🎀 Silk Ribbon"),
+            ("👑 Royal Golden Crown", "👑 Royal Crown"),
+            ("🌸 Sakura Flower Pin", "🌸 Sakura Flower"),
+            ("👓 Smart Glasses", "👓 Smart Glasses"),
+            ("🎩 Gentleman Top Hat", "🎩 Gentleman Top Hat"),
+            ("🧣 Cozy Knit Scarf", "🧣 Cozy Scarf"),
+            ("🐾 Natural Bunny (None)", "None"),
+        ]
+        for name, acc_code in outfits:
+            outfit_menu.add_command(label=name, command=lambda a=acc_code: self.on_change_accessory and self.on_change_accessory(a))
+        self.menu.add_cascade(label="👗 Outfits & Accessories", menu=outfit_menu)
+
         self.menu.add_command(label="⚙️ Preferences & Wardrobe...", font=("Segoe UI", 9, "bold"), command=lambda: self.on_open_preferences and self.on_open_preferences())
 
         self.menu.add_separator()
