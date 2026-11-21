@@ -10,6 +10,7 @@ from core.fsm import PetFSM, State
 from core.physics import PhysicsEngine, get_virtual_screen_bounds, get_primary_taskbar_height
 from core.stats import PetStats
 from ui.canvas_renderer import CanvasRenderer
+from ui.settings_dialog import SettingsDialog
 from ui.tray import TrayManager
 from ui.window import PetWindow
 
@@ -73,6 +74,7 @@ class PetEngine:
             on_toggle_focus=self.toggle_focus_mode,
             on_toggle_sleep=self.toggle_sleep,
             on_change_color=self.change_base_color,
+            on_open_preferences=lambda: self._dispatch_to_main_thread(self.open_preferences_dialog),
             on_exit=self.exit_app,
         )
 
@@ -86,6 +88,7 @@ class PetEngine:
             on_toggle_sleep=lambda: self._dispatch_to_main_thread(self.toggle_sleep),
             on_pet=lambda: self._dispatch_to_main_thread(self.handle_pet),
             on_change_color=lambda c: self._dispatch_to_main_thread(self.change_base_color, c),
+            on_open_preferences=lambda: self._dispatch_to_main_thread(self.open_preferences_dialog),
             on_exit=lambda: self._dispatch_to_main_thread(self.exit_app),
         )
         self.tray.start()
@@ -158,6 +161,56 @@ class PetEngine:
         self.config_manager.set("auto_color", False, auto_save=True)
         self.tray.update_icon_color(color_hex)
         self.renderer.spawn_particle("✦", color_hex, size=14)
+
+    def open_preferences_dialog(self) -> None:
+        """Opens the visual Preferences & Wardrobe dialog."""
+        if hasattr(self, "window") and self.window and self.window.root:
+            SettingsDialog(
+                parent=self.window.root,
+                config_data=self.config_manager.data,
+                on_save=self.apply_preferences,
+            )
+
+    def apply_preferences(self, new_config: dict) -> None:
+        """Applies newly saved preferences from the GUI dialog."""
+        self.config_manager.data = new_config
+        self.config_manager.save()
+
+        # Sync dist/config.json if running as standalone or adjacent
+        try:
+            import json
+            import os
+            ws = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            dist_cfg = os.path.join(ws, "dist", "config.json")
+            if os.path.exists(os.path.dirname(dist_cfg)):
+                with open(dist_cfg, "w", encoding="utf-8") as f:
+                    json.dump(new_config, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+
+        # Apply hotkey changes
+        hotkeys = new_config.get("hotkeys", {})
+        if hasattr(self, "window") and self.window:
+            self.window.update_hotkeys(hotkeys)
+
+        # Apply base color
+        new_color = new_config.get("base_color", "#FFB6C1")
+        if hasattr(self, "tray") and self.tray:
+            self.tray.update_icon_color(new_color)
+
+        # Update stats settings
+        circ = new_config.get("circadian", {})
+        self.stats.bedtime_hour = circ.get("bedtime_hour", 23)
+        self.stats.wake_hour = circ.get("wake_hour", 7)
+        self.stats.idle_dock_seconds = circ.get("idle_dock_seconds", 15)
+
+        wellness = new_config.get("wellness_reminders", {})
+        self.stats.reminders_enabled = wellness.get("enabled", True)
+        self.stats.reminder_interval_seconds = wellness.get("interval_minutes", 20) * 60
+
+        if hasattr(self, "renderer") and self.renderer:
+            self.renderer.speech_bubble.show("Preferences updated! ✨", duration_seconds=3.0)
+            self.renderer.spawn_particle("✨", new_color, size=14)
 
     def update_loop(self) -> None:
         """Physical animation and motion tick (~20 FPS awake, throttled to 4 FPS when sleeping)."""

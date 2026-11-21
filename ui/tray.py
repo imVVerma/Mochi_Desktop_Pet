@@ -48,13 +48,15 @@ class TrayManager:
         on_toggle_sleep: Callable[[], None],
         on_pet: Callable[[], None],
         on_change_color: Callable[[str], None],
-        on_exit: Callable[[], None],
+        on_open_preferences: Optional[Callable[[], None]] = None,
+        on_exit: Callable[[], None] = None,
     ):
         self.on_toggle_visibility = on_toggle_visibility
         self.on_toggle_focus = on_toggle_focus
         self.on_toggle_sleep = on_toggle_sleep
         self.on_pet = on_pet
         self.on_change_color = on_change_color
+        self.on_open_preferences = on_open_preferences
         self.on_exit = on_exit
 
         self.icon: Optional["pystray.Icon"] = None
@@ -84,6 +86,7 @@ class TrayManager:
                     )
                 ),
                 pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Preferences & Wardrobe", lambda icon, item: self.on_open_preferences and self.on_open_preferences()),
                 pystray.MenuItem("Exit", lambda icon, item: self._handle_exit()),
             )
 

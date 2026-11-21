@@ -52,6 +52,7 @@ class PetWindow:
         on_toggle_focus: Optional[Callable[[], None]] = None,
         on_toggle_sleep: Optional[Callable[[], None]] = None,
         on_change_color: Optional[Callable[[str], None]] = None,
+        on_open_preferences: Optional[Callable[[], None]] = None,
         on_exit: Optional[Callable[[], None]] = None,
     ):
         enable_high_dpi_awareness()
@@ -68,6 +69,7 @@ class PetWindow:
         self.on_toggle_focus = on_toggle_focus
         self.on_toggle_sleep = on_toggle_sleep
         self.on_change_color = on_change_color
+        self.on_open_preferences = on_open_preferences
         self.on_exit = on_exit
 
         self.is_visible: bool = True
@@ -141,6 +143,7 @@ class PetWindow:
         self.menu.add_separator()
         toggle_hk = self.hotkeys_config.get("toggle_visibility", "Alt+Q").upper()
         self.menu.add_command(label=f"Dismiss / Summon ({toggle_hk})", command=self.toggle_visibility)
+        self.menu.add_command(label="Preferences & Wardrobe ⚙️", command=lambda: self.on_open_preferences and self.on_open_preferences())
         self.menu.add_command(label="Exit Desktop Pet", command=self.close)
 
     def _show_context_menu(self, event) -> None:
