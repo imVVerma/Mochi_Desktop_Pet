@@ -2,8 +2,8 @@
   "pet_name": "Mochi",
   "species": "bunny",
   "home_corner": "bottom_right",
-  "scale": 1.0,
-  "base_color": "#B5EAD7",
+  "scale": 1.45,
+  "base_color": "#957DAD",
   "auto_color": true,
   "eye_color": "#2C3E50",
   "walk_speed": 3.0,
@@ -33,8 +33,9 @@
     "idle_dock_seconds": 5
   },
   "hotkeys": {
-    "toggle_visibility": "alt+l",
+    "toggle_visibility": "win+z",
     "toggle_focus": "ctrl+shift+f",
     "pet": "ctrl+shift+p"
-  }
+  },
+  "accessory": "👑 Royal Crown"
 }

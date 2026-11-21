@@ -19,6 +19,8 @@ DesktopPet.spec
 *.tmp
 .pet_write_test
 scratch/
+dist/mobile/
+*.apk
 
 # Crash & debug logs
 *.log
