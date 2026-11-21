@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'bunny_painter.dart';
 import 'pet_state.dart';
 
@@ -33,12 +34,15 @@ class FloatingCompanionScreen extends StatefulWidget {
 
 class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
     with SingleTickerProviderStateMixin {
+  static const _overlayChannel = MethodChannel('com.example.mochi_companion/overlay');
+
   late final AnimationController _animController;
   final PetState _petState = PetState();
 
   Offset _position = const Offset(120, 300);
   bool _isDragging = false;
   String? _currentSpeech;
+  bool _isFloatingActive = false;
 
   @override
   void initState() {
@@ -47,6 +51,67 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat();
+    _checkOverlayStatus();
+  }
+
+  Future<void> _checkOverlayStatus() async {
+    try {
+      final bool hasPermission =
+          await _overlayChannel.invokeMethod('checkOverlayPermission') ?? false;
+      if (mounted) {
+        // Overlay permission ready
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _toggleFloatingOverlay() async {
+    try {
+      final bool hasPermission =
+          await _overlayChannel.invokeMethod('checkOverlayPermission') ?? false;
+
+      if (!hasPermission) {
+        await _overlayChannel.invokeMethod('requestOverlayPermission');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Please enable "Display over other apps" for Mochi, then tap again!'),
+              backgroundColor: Color(0xFF6C5CE7),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (_isFloatingActive) {
+        await _overlayChannel.invokeMethod('stopFloatingPet');
+        if (mounted) {
+          setState(() => _isFloatingActive = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Floating Mochi stopped.')),
+          );
+        }
+      } else {
+        await _overlayChannel.invokeMethod('startFloatingPet');
+        if (mounted) {
+          setState(() => _isFloatingActive = true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  '🐾 Mochi is now floating over your screen! Feel free to switch to any app or home screen.'),
+              backgroundColor: Color(0xFF6C5CE7),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Overlay notice: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -118,16 +183,44 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   _buildStatCard(),
                   const Spacer(),
+                  // Prominent Floating Overlay Switch (Wispr Flow model)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ElevatedButton.icon(
+                      onPressed: _toggleFloatingOverlay,
+                      icon: Icon(_isFloatingActive
+                          ? Icons.visibility_off
+                          : Icons.open_in_new),
+                      label: Text(
+                        _isFloatingActive
+                            ? 'Dismiss Floating Bubble'
+                            : '✨ Float Over Other Apps (Wispr Flow)',
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: _isFloatingActive
+                            ? Colors.grey.shade700
+                            : const Color(0xFF6C5CE7),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        elevation: 4,
+                      ),
+                    ),
+                  ),
                   _buildActionBar(),
                 ],
               ),
             ),
           ),
 
-          // Floating Mochi Pet with Draggable gesture physics
+          // In-App Preview Mochi Pet with Draggable gesture physics
           Positioned(
             left: _position.dx,
             top: _position.dy,
@@ -141,11 +234,10 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
               onPanEnd: (_) {
                 setState(() {
                   _isDragging = false;
-                  // Magnetic docking to edges
                   final snapLeft = _position.dx < size.width / 2;
                   _position = Offset(
                     snapLeft ? 16 : size.width - 150 - 16,
-                    _position.dy.clamp(60, size.height - 220),
+                    _position.dy.clamp(60, size.height - 240),
                   );
                 });
               },
@@ -156,7 +248,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                   if (_currentSpeech != null)
                     Container(
                       margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
@@ -220,14 +313,16 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
           const SizedBox(height: 12),
           _buildStatRow('⚡ Energy', _petState.energy, Colors.amber),
           const SizedBox(height: 12),
-          _buildStatRow('🎓 Focus Today', '${_petState.focusMinutes} min', Colors.deepPurpleAccent),
+          _buildStatRow('🎓 Focus Today', '${_petState.focusMinutes} min',
+              Colors.deepPurpleAccent),
         ],
       ),
     );
   }
 
   Widget _buildStatRow(String label, dynamic value, Color barColor) {
-    final double fraction = (value is int) ? (value / 100.0).clamp(0.0, 1.0) : 1.0;
+    final double fraction =
+        (value is int) ? (value / 100.0).clamp(0.0, 1.0) : 1.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -296,18 +391,38 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                '🎨 Wardrobe & Colors',
+                '🎨 Fur Color & Wardrobe',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 12,
+                runSpacing: 8,
                 children: [
                   _colorPill('Vanilla Cream', const Color(0xFFFFF8E7)),
                   _colorPill('Strawberry Milk', const Color(0xFFFFD1DC)),
                   _colorPill('Cloud White', const Color(0xFFFFFFFF)),
                   _colorPill('Matcha Cream', const Color(0xFFE8F5E9)),
                   _colorPill('Lilac Mist', const Color(0xFFEDE7F6)),
+                ],
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                '👗 Outfits & Accessories',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _accessoryChip('🎀 Silk Ribbon'),
+                  _accessoryChip('👑 Royal Crown'),
+                  _accessoryChip('🌸 Sakura Flower'),
+                  _accessoryChip('👓 Smart Glasses'),
+                  _accessoryChip('🎩 Top Hat'),
+                  _accessoryChip('🧣 Cozy Scarf'),
+                  _accessoryChip('🐾 Natural'),
                 ],
               ),
             ],
@@ -323,6 +438,18 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
       label: Text(name),
       onPressed: () {
         setState(() => _petState.primaryColor = color);
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  Widget _accessoryChip(String acc) {
+    final isSelected = _petState.accessory == acc;
+    return ChoiceChip(
+      label: Text(acc),
+      selected: isSelected,
+      onSelected: (_) {
+        setState(() => _petState.accessory = acc);
         Navigator.pop(context);
       },
     );
