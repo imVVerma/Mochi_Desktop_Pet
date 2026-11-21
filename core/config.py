@@ -84,7 +84,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "idle_sleep_seconds": 180
     },
     "hotkeys": {
-        "toggle_visibility": "ctrl+shift+b",
+        "toggle_visibility": "alt+q",
         "toggle_focus": "ctrl+shift+f",
         "pet": "ctrl+shift+p"
     }

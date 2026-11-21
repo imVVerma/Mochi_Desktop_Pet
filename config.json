@@ -33,7 +33,7 @@
     "idle_dock_seconds": 15
   },
   "hotkeys": {
-    "toggle_visibility": "ctrl+shift+b",
+    "toggle_visibility": "alt+q",
     "toggle_focus": "ctrl+shift+f",
     "pet": "ctrl+shift+p"
   }

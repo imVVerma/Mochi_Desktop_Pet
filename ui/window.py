@@ -3,7 +3,8 @@ import logging
 import sys
 import threading
 import tkinter as tk
-from typing import Callable, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple
+from core.hotkeys import GlobalHotkeyManager
 from core.physics import Bounds, get_virtual_screen_bounds, get_primary_taskbar_height
 
 logger = logging.getLogger("DesktopPet.Window")
@@ -43,6 +44,7 @@ class PetWindow:
         width: int = 140,
         height: int = 140,
         transparent_color: str = "#000001",
+        hotkeys_config: Optional[Dict[str, str]] = None,
         on_press: Optional[Callable[[float, float], None]] = None,
         on_drag: Optional[Callable[[float, float, float, float], None]] = None,
         on_release: Optional[Callable[[], None]] = None,
@@ -57,6 +59,7 @@ class PetWindow:
         self.width = width
         self.height = height
         self.transparent_color = transparent_color
+        self.hotkeys_config = hotkeys_config or {}
 
         self.on_press = on_press
         self.on_drag = on_drag
@@ -108,10 +111,13 @@ class PetWindow:
         self.canvas.bind("<Button-3>", self._show_context_menu)
         self.canvas.bind("<Double-Button-1>", self._handle_double_click)
 
-        # Non-admin Global Hotkeys setup
-        self._stop_hotkeys = threading.Event()
-        self._hotkey_thread: Optional[threading.Thread] = None
-        self._setup_global_hotkeys()
+        # Global Hotkeys Manager setup
+        self.hotkey_manager = GlobalHotkeyManager(
+            on_toggle_visibility=lambda: self.root.after(0, self.toggle_visibility),
+            on_toggle_focus=lambda: self.on_toggle_focus and self.root.after(0, self.on_toggle_focus),
+            on_pet=lambda: self.on_pet and self.root.after(0, self.on_pet),
+        )
+        self.hotkey_manager.start(self.hotkeys_config)
 
     def _build_context_menu(self) -> None:
         self.menu = tk.Menu(self.root, tearoff=0)
@@ -133,7 +139,8 @@ class PetWindow:
         self.menu.add_cascade(label="Change Skin Color 🎨", menu=color_menu)
 
         self.menu.add_separator()
-        self.menu.add_command(label="Dismiss / Hide (Ctrl+Shift+B)", command=self.toggle_visibility)
+        toggle_hk = self.hotkeys_config.get("toggle_visibility", "Alt+Q").upper()
+        self.menu.add_command(label=f"Dismiss / Summon ({toggle_hk})", command=self.toggle_visibility)
         self.menu.add_command(label="Exit Desktop Pet", command=self.close)
 
     def _show_context_menu(self, event) -> None:
@@ -175,63 +182,11 @@ class PetWindow:
             self.is_visible = True
             logger.info("Pet summoned back to desktop.")
 
-    def _setup_global_hotkeys(self) -> None:
-        """Sets up non-admin global hotkeys via Windows RegisterHotKey."""
-        if sys.platform != "win32":
-            return
-
-        def hotkey_worker():
-            user32 = ctypes.windll.user32
-            # Hotkey IDs
-            ID_TOGGLE = 101
-            ID_FOCUS = 102
-            ID_PET = 103
-            ID_TOGGLE_SHIFT_TAB = 104
-
-            # RegisterHotKey does NOT require Administrator rights!
-            r1 = user32.RegisterHotKey(None, ID_TOGGLE, MOD_CONTROL | MOD_SHIFT, VK_B)
-            r2 = user32.RegisterHotKey(None, ID_FOCUS, MOD_CONTROL | MOD_SHIFT, VK_F)
-            r3 = user32.RegisterHotKey(None, ID_PET, MOD_CONTROL | MOD_SHIFT, VK_P)
-            r4 = user32.RegisterHotKey(None, ID_TOGGLE_SHIFT_TAB, MOD_SHIFT, VK_TAB)
-
-            if not (r1 or r2 or r3 or r4):
-                logger.debug("Win32 RegisterHotKey returned False for one or more keys.")
-
-            class MSG(ctypes.Structure):
-                _fields_ = [
-                    ("hwnd", ctypes.c_void_p),
-                    ("message", ctypes.c_uint),
-                    ("wParam", ctypes.c_void_p),
-                    ("lParam", ctypes.c_void_p),
-                    ("time", ctypes.c_ulong),
-                    ("pt_x", ctypes.c_long),
-                    ("pt_y", ctypes.c_long),
-                ]
-
-            msg = MSG()
-            while not self._stop_hotkeys.is_set():
-                # PeekMessage with PM_REMOVE allows non-blocking loop check
-                if user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, 1):
-                    if msg.message == WM_HOTKEY:
-                        hk_id = msg.wParam
-                        if hk_id in (ID_TOGGLE, ID_TOGGLE_SHIFT_TAB):
-                            self.root.after(0, self.toggle_visibility)
-                        elif hk_id == ID_FOCUS and self.on_toggle_focus:
-                            self.root.after(0, self.on_toggle_focus)
-                        elif hk_id == ID_PET and self.on_pet:
-                            self.root.after(0, self.on_pet)
-                    user32.TranslateMessage(ctypes.byref(msg))
-                    user32.DispatchMessageW(ctypes.byref(msg))
-                else:
-                    self._stop_hotkeys.wait(0.05)
-
-            user32.UnregisterHotKey(None, ID_TOGGLE)
-            user32.UnregisterHotKey(None, ID_FOCUS)
-            user32.UnregisterHotKey(None, ID_PET)
-            user32.UnregisterHotKey(None, ID_TOGGLE_SHIFT_TAB)
-
-        self._hotkey_thread = threading.Thread(target=hotkey_worker, daemon=True)
-        self._hotkey_thread.start()
+    def update_hotkeys(self, new_hotkeys_config: Dict[str, str]) -> None:
+        """Dynamically re-registers global hotkeys and updates context menu label."""
+        self.hotkeys_config = new_hotkeys_config or {}
+        if hasattr(self, "hotkey_manager") and self.hotkey_manager:
+            self.hotkey_manager.update_hotkeys(self.hotkeys_config)
 
     def get_pointer_position(self) -> Tuple[int, int]:
         try:
@@ -240,7 +195,8 @@ class PetWindow:
             return 0, 0
 
     def close(self) -> None:
-        self._stop_hotkeys.set()
+        if hasattr(self, "hotkey_manager") and self.hotkey_manager:
+            self.hotkey_manager.stop()
         # Prevent re-entrant recursion
         callback = self.on_exit
         self.on_exit = None

@@ -62,6 +62,7 @@ class PetEngine:
             width=self.width,
             height=self.height,
             transparent_color=self.config_manager.get("transparent_color", "#000001"),
+            hotkeys_config=self.config_manager.get("hotkeys", {}),
             on_press=self.handle_press,
             on_drag=self.handle_drag,
             on_release=self.handle_release,
@@ -241,7 +242,9 @@ class PetEngine:
 
         try:
             # Check for config changes on disk
-            self.config_manager.check_hot_reload()
+            if self.config_manager.check_hot_reload():
+                if hasattr(self, "window") and self.window:
+                    self.window.update_hotkeys(self.config_manager.get("hotkeys", {}))
 
             # Step timers
             reminder_or_focus_msg = self.stats.tick_second()
