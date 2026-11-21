@@ -192,6 +192,11 @@ class PetEngine:
         hotkeys = new_config.get("hotkeys", {})
         if hasattr(self, "window") and self.window:
             self.window.update_hotkeys(hotkeys)
+            new_name = new_config.get("pet_name", "Mochi")
+            try:
+                self.window.menu.entryconfigure(0, label=f"🐾 {new_name} — Desk Companion")
+            except Exception:
+                pass
 
         # Apply base color
         new_color = new_config.get("base_color", "#FFB6C1")

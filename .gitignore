@@ -10,9 +10,16 @@ venv/
 ENV/
 env/
 
-# PyInstaller build artifacts (keep build scripts and icon)
+# PyInstaller build artifacts
 build/DesktopPet/
+build/_temp*
+DesktopPet.spec
 
-# Crash / debug logs
+# Scratch & temporary test files
+*.tmp
+.pet_write_test
+scratch/
+
+# Crash & debug logs
 *.log
 desktop_pet.log

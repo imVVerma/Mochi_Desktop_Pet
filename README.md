@@ -1,177 +1,149 @@
-# 🐾 Mochi_Desktop_Pet (Floppy Bunny)
+# 🐾 Mochi Desktop Pet (Floppy Bunny)
 
-> A delightful, lifelike, cute, and genuinely useful virtual desktop companion for Windows.
+> A delightful, lifelike, cute, and genuinely useful virtual desktop companion for Windows (macOS, Linux & Mobile coming soon!).
 
-## 📥 Download Mochi (Zero-Setup)
-No Python, terminal, or installation required!
-* 🪟 **[Download DesktopPet.exe for Windows](https://github.com/imVVerma/Mochi_Desktop_Pet/releases/latest/download/DesktopPet.exe)** *(Double-click to run! Press `Alt+Q` to summon or dismiss)*
-* 🍏 **macOS** & 🐧 **Linux**: In active development
-* 📱 **Mobile (iOS & Android)**: Wispr Flow-style floating companion & Dynamic Island in progress!
-
-Desktop Pet is a lightweight, zero-install desktop companion built with Python and Tkinter. Floating framelessly on top of all your application windows, the pet features a procedural vector **Floppy Bunny** character (infinitely scalable, zero bitmap sprite dependencies) with dynamic floppy ear physics, cozy bottom-right corner docking above the taskbar, emotional states, circadian sleep cycles, and real-world productivity assistance.
+[![Release](https://img.shields.io/badge/Release-v1.0.0-FFB6C1?style=for-the-badge&logo=windows)](https://github.com/imVVerma/Mochi_Desktop_Pet/releases/latest)
+[![Tests](https://img.shields.io/badge/Tests-26%2F26%20Passing-brightgreen?style=for-the-badge)](https://github.com/imVVerma/Mochi_Desktop_Pet/actions)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python)](https://python.org)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20(Cross--Platform%20Ready)-blue?style=for-the-badge)](https://github.com/imVVerma/Mochi_Desktop_Pet/blob/main/ROADMAP.md)
 
 ---
 
-## ✨ Features
+## 📥 1-Click Download (No Python or Terminal Required!)
 
-- **Cute & Lifelike Floppy Bunny Aesthetics:**
-  - **Dynamic Floppy Ears:** Long ears with springy lag/sway physics that droop when sleepy/tired, perk up straight when excited, and trail back during jumps or falls.
-  - **3D Depth & Details:** Soft cream belly patch (`#FFF9F2`), fluffy white cotton tail with gentle wagging, and stepped front/back paws with walking gait.
-  - **Expressive Anime Sparkle Eyes:** Layered primary specular reflection and micro-twinkle highlight, twitchy whiskers, pink heart-nose, and adorable `:3` mouth.
-
-- **Cozy Corner Stationing:**
-  - Naturally roosts in the **bottom-right corner** right above the Windows taskbar clock/tray without obstructing your primary workspace.
-  - Autonomous homing behavior (`RETURNING_HOME` state): After wandering or playing, the bunny gently hops back to its home corner to rest.
-
-- **Lifelike Kinematics & Physics:**
-  - Acceleration curves, velocity damping, air resistance, and gravity.
-  - Procedural **squash-and-stretch** upon landing from jumps or drops.
-  - Multi-monitor boundary awareness (including secondary displays placed to the left or top with negative coordinates).
-  - Windows taskbar awareness: Perches smoothly right on top of your taskbar!
-  - Toss physics: Fling your bunny across your screens with realistic parabolic inertia.
-
-- **Living Personality & Emotional FSM:**
-  - Dynamic procedural expressions:
-    - Normal / Curious: Pupils follow your mouse cursor smoothly (`o _ O`).
-    - Excited / Happy: Dilated eyes, open happy smile, heart particles (`♥`).
-    - Dancing: Joyful rhythmic winking (`> <`) and squash bounce.
-    - Sleeping: Calm closed eyes (`- _ -`) with floating `z Z Z` particles.
-    - Dizzy / Tossed: Concentric spiral eyes (`@ _ @`) when thrown at high velocity.
-    - Focus Mode: Tiny wireframe reading glasses!
-  - Life meters: `Energy` (0–100), `Happiness` (0–100), `Curiosity` (0–100).
-  - Circadian rhythm: Automatically curls up to sleep after 23:00 or during long user inactivity, throttling CPU to < 0.2%.
-
-- **Practical Productivity & Wellness:**
-  - **Pomodoro Focus Sprints:** Put Mochi into Focus Mode (`Ctrl+Shift+F`); Mochi puts on study glasses and sits quietly beside you for 25-minute sprints.
-  - **Ergonomics & Wellness Speech Bubbles:** Gentle procedural reminders to hydrate, do 20-20-20 eye breaks, stretch shoulders, and check posture.
-
-- **Non-Admin System Integration:**
-  - System Tray icon (`pystray`) with right-click menu: Toggle Visibility, Bedtime, Focus Mode, Petting, Skin Color Picker, Exit.
-  - Native Windows global hotkeys via Win32 `RegisterHotKey`: **Zero admin/root privileges required** and zero antivirus false positives!
-  - Hot-reloadable `config.json`: Change colors, speeds, reminders, or hotkeys without restarting.
-
----
-
-## 🎮 Controls & Interactions
-
-| Action | Control / Shortcut | Description |
+| Platform | Download Link | Quick Start |
 | :--- | :--- | :--- |
-| **Pick up & Drag** | `Left Click + Drag` | Pick up Mochi and move him around your screens. |
-| **Toss / Fling** | `Fling + Release` | Release cursor while dragging to toss Mochi in an arc. |
-| **Pet Mochi** | `Right Click` or `Double Click` | Pet Mochi to boost happiness and trigger happy dances (`Ctrl+Shift+P`). |
-| **Summon / Dismiss** | `Ctrl + Shift + B` | Instantly hide Mochi to tray or bring him back to your cursor. |
-| **Toggle Focus Mode** | `Ctrl + Shift + F` | Start/pause a 25-minute Pomodoro study sprint. |
-| **Context Menu** | `Right Click` (or Tray) | Change skin color, toggle bedtime, or exit. |
+| 🪟 **Windows** | [⬇️ **Download DesktopPet.exe**](https://github.com/imVVerma/Mochi_Desktop_Pet/releases/latest/download/DesktopPet.exe) | 1. Double-click `DesktopPet.exe` to run!<br>2. Press **`Alt + Q`** to summon or dismiss Mochi anytime. |
+| 🍏 **macOS** | *In development (Qt/Cocoa PAL)* | See [Roadmap](ROADMAP.md) |
+| 🐧 **Linux** | *In development (AppImage)* | See [Roadmap](ROADMAP.md) |
+| 📱 **Mobile** | *In development (Android Bubble / iOS Dynamic Island)* | See [Wispr Flow Mobile Model](ROADMAP.md) |
 
 ---
 
-## 🚀 Getting Started
+## ✨ What Makes Mochi Special?
 
-### Option 1: Standalone Zero-Install Executable (No Python Required)
+* **🐰 Lifelike Floppy Bunny Aesthetics:**
+  * **Dynamic Ear Physics**: Soft bunny ears sway and trail with momentum, droop when sleepy, perk up straight when excited, and flutter during jumps.
+  * **Layered 3D Vector Depth**: Soft cream belly patch, fluffy cotton tail, twitchy whiskers, stepped walking paws, and anime sparkle eyes with pupil mouse tracking.
+* **📍 Cozy Taskbar Corner Roosting:**
+  * When you are busy working, Mochi gently hops across the bottom of your screen and perches in the **bottom-right corner** above your taskbar clock without getting in your way.
+* **🎨 Zero-Code In-App Wardrobe & Personalization:**
+  * Right-click Mochi to open the visual **Preferences & Wardrobe dialog**: rename your pet, choose pastel colors, record custom hotkeys, and adjust timers with live hot-reloading!
+* **🔍 Windows Search Bar Integration:**
+  * Press the Windows key, type your pet's name (e.g. `Mochi`), and press Enter to launch or toggle!
+* **🎓 Pomodoro & Wellness Assistant:**
+  * Puts on reading glasses for 25-minute Pomodoro study sprints, plus gentle speech bubbles reminding you to hydrate, stretch, and take 20-20-20 eye rests.
+* **⚡ Ultra-Lightweight & Non-Admin:**
+  * Pure procedural vector graphics (zero bulky sprite sheets), < 0.2% CPU when resting, and strictly user-mode Win32 hotkeys (no admin rights or kernel drivers needed).
 
-Run the pre-compiled standalone binary:
-```cmd
-dist\DesktopPet.exe
-```
+---
 
-### Option 2: Run with Python (Zero External Dependencies)
+## 🎮 How to Play & Controls
 
-Desktop Pet runs on any system with standard Python 3.8+ and built-in Tkinter:
+### Mouse Interactions
+* **Grab & Drag**: `Left Click + Drag` Mochi anywhere across your monitors.
+* **Toss & Fling**: Drag and release with speed to throw Mochi in a parabolic physics arc! Mochi shows dizzy spiral eyes `(@ _ @)` and squashes upon landing.
+* **Pet / Cheer Up**: `Right Click` Mochi -> **✨ Cheer Up / Pet** (or double-click) to shower hearts and boost happiness!
 
+### Global Keyboard Shortcuts
+| Hotkey | Action | Description |
+| :--- | :--- | :--- |
+| **`Alt + Q`** | **Summon / Dismiss** | Toggles Mochi: if on-screen, hides to tray; if in tray, pops up right where you are! *(Customizable in Wardrobe)* |
+| **`Ctrl + Shift + F`** | **Focus Mode** | Starts or pauses a 25-minute Pomodoro study sprint with tiny wireframe glasses. |
+| **`Ctrl + Shift + P`** | **Pet Cheer-Up** | Instant happiness boost from anywhere on your PC. |
+| **`Ctrl + Shift + B`** | **Backup Hotkey** | Permanent fallback hotkey for summoning/dismissing. |
+
+---
+
+## 🌸 Customization (Zero JSON Editing)
+
+Right-click Mochi and select **`⚙️ Preferences & Wardrobe...`** to open the built-in customization suite:
+
+1. **Appearance & Name**:
+   * Change your companion's name (e.g. *Koko*, *BunnyHop*, *Fluffy*).
+   * **Automatic Windows Search Sync**: Renaming updates your Windows Start Menu shortcut so searching your pet's new name finds it immediately!
+   * Pick from pastel swatches (*Blossom Pink, Mint Sage, Sky Blue, Lavender, Buttercup, Peach Sorbet, White*) or a full custom color wheel with live avatar preview.
+   * Adjust Mochi's size scale from 70% to 150%.
+2. **Interactive Hotkey Recorder**:
+   * Click **Record New Hotkey ⏺️**, press any key combo (e.g. `Alt+Q`, `Ctrl+Space`, `Alt+Z`), and it auto-saves!
+3. **Habits & Timers**:
+   * Adjust Pomodoro sprint and break lengths.
+   * Adjust the corner docking inactivity delay (5s to 60s).
+   * Customize circadian bedtime and morning wake-up hours.
+
+---
+
+## 🛠️ For Developers & Modders
+
+### Running from Source
 ```bash
-# Run directly with standard library
-python main.py
-```
+# 1. Clone the repository
+git clone https://github.com/imVVerma/Mochi_Desktop_Pet.git
+cd Mochi_Desktop_Pet
 
-### Option 3: Full Experience with System Tray & Virtualenv
-
-```bash
-# 1. Create virtual environment
+# 2. Create and activate a virtual environment
 python -m venv .venv
-.venv\Scripts\activate
+.venv\Scripts\activate   # Windows
 
-# 2. Install optional enhancements (system tray & testing)
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Launch
+# 4. Run Desktop Pet
 python main.py
 ```
 
----
-
-## ⚙️ Configuration (`config.json`)
-
-Mochi can be fully customized via `config.json`. Any changes saved to this file are **hot-reloaded automatically**:
-
-```json
-{
-  "pet_name": "Mochi",
-  "scale": 1.0,
-  "base_color": "#FFB6C1",
-  "auto_color": true,
-  "eye_color": "#2C3E50",
-  "walk_speed": 3.0,
-  "taskbar_height": 45,
-  "transparent_color": "#000001",
-  "focus_mode": {
-    "work_duration_minutes": 25,
-    "break_duration_minutes": 5,
-    "auto_break": true
-  },
-  "wellness_reminders": {
-    "enabled": true,
-    "interval_minutes": 20,
-    "messages": [
-      "Time to drink some water! 💧",
-      "Look 20 feet away for 20 seconds! 👁️",
-      "Roll your shoulders and stretch! 🧘",
-      "Take a slow deep breath in... and out. 🌸",
-      "Posture check! Sit up comfortably. 🪑"
-    ]
-  },
-  "circadian": {
-    "bedtime_hour": 23,
-    "wake_hour": 7,
-    "idle_sleep_seconds": 180
-  },
-  "hotkeys": {
-    "toggle_visibility": "ctrl+shift+b",
-    "toggle_focus": "ctrl+shift+f",
-    "pet": "ctrl+shift+p"
-  }
-}
-```
-
----
-
-## 🧪 Automated Evals & Test Suite
-
-Run the full automated test and stress benchmark suite:
-
+### Running the Test Suite
 ```bash
-pytest -v
+python -m pytest
 ```
+*All 26 unit tests cover configuration recovery, state transitions, physics bounds, global hotkeys, and GUI dialog actions.*
 
-The eval suite tests:
-- **State Machine Invariants (`test_fsm.py`):** 5,000 tick deadlock verification, energy depletion guarantee, interruption guarantee, Pomodoro invariants.
-- **Physics & Boundaries (`test_physics.py`):** Negative multi-monitor clamping, taskbar perching, parabolic fling physics, squash-and-stretch damping.
-- **Resilience & Hot-Reload (`test_config.py`):** Corrupt JSON fallback recovery, deep schema merge, live hot-reloading.
-- **Stress & Resource Bounds (`test_stress.py`):**
-  - **CPU Ceiling:** < 2.0 ms per simulation frame.
-  - **Zero Leaks:** 50,000-tick endurance run with < 5.0 MB heap delta.
-  - **Chaos Drag:** 1,000 rapid chaotic flings with zero NaN or bounding errors.
-
----
-
-## 📦 Building the Standalone Executable
-
-To compile into a single `.exe`:
-
-```cmd
+### Building the Standalone Executable
+```bash
+# Automated one-click build script
 build\build.bat
 ```
-or run PyInstaller directly:
+The compiled binary will be placed at `dist/DesktopPet.exe`.
+
+### Creating Windows Search Shortcuts
 ```bash
-pyinstaller --noconsole --onefile --name "DesktopPet" --icon "build/icon.ico" --add-data "config.json;." main.py
+python build\install_shortcut.py
 ```
-The compiled binary will be placed in `dist/DesktopPet.exe`.
+Installs shortcuts into your Start Menu and Desktop, and flushes the Windows Explorer shell cache.
+
+---
+
+## 📁 Clean Repository Structure
+
+```
+Mochi_Desktop_Pet/
+├── .github/workflows/       # GitHub Actions CI/CD (automated Windows executable release)
+├── build/                   # Icon generator and Windows shortcut installer scripts
+├── core/                    # Engine, Physics kinematics, FSM, Hotkeys, and Config manager
+├── dist/                    # Standalone zero-install DesktopPet.exe and local config
+├── tests/                   # 26 automated unit tests (100% green test suite)
+├── ui/                      # Tkinter canvas renderer, Window overlay, Tray, and Settings Dialog
+├── main.py                  # Single-instance application entry point
+├── config.json              # Application configuration
+├── requirements.txt         # Python dependencies
+└── ROADMAP.md               # Cross-platform & Mobile Companion Architecture Roadmap
+```
+
+---
+
+## 🗺️ Roadmap & Future Features
+
+We are actively expanding Mochi into a cross-platform companion:
+* **macOS & Linux**: Platform Abstraction Layer (PAL) with PySide6/Qt for unified native window transparency.
+* **Mobile Companion (Wispr Flow model)**:
+  * **Android**: Floating Pet Bubble (`SYSTEM_ALERT_WINDOW`) overlaying all mobile apps.
+  * **iOS**: Dynamic Island & Live Activities (`ActivityKit`) for iPhone 14 Pro/15/16.
+  * **Cozy Sanctuary App**: Cross-platform Flutter mini-game (feeding, petting, haptics, focus room).
+
+Read the detailed architecture in **[ROADMAP.md](ROADMAP.md)**!
+
+---
+
+## 📄 License
+
+MIT License. Free to use, customize, and share! 💖

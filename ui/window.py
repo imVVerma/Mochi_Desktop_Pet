@@ -122,29 +122,38 @@ class PetWindow:
         self.hotkey_manager.start(self.hotkeys_config)
 
     def _build_context_menu(self) -> None:
-        self.menu = tk.Menu(self.root, tearoff=0)
-        self.menu.add_command(label="Pet Mochi (Cheer Up) ✨", command=lambda: self.on_pet and self.on_pet())
-        self.menu.add_command(label="Toggle Focus Mode (Pomodoro) 🎓", command=lambda: self.on_toggle_focus and self.on_toggle_focus())
-        self.menu.add_command(label="Toggle Sleep / Wake 💤", command=lambda: self.on_toggle_sleep and self.on_toggle_sleep())
+        self.menu = tk.Menu(self.root, tearoff=0, bg="#FFFFFF", fg="#2C3E50", activebackground="#FFD1DC", activeforeground="#18181D")
+        
+        # Header title
+        self.menu.add_command(label="🐾 Mochi — Desk Companion", state=tk.DISABLED, font=("Segoe UI", 9, "bold"))
         self.menu.add_separator()
 
-        color_menu = tk.Menu(self.menu, tearoff=0)
+        # Quick interactions
+        self.menu.add_command(label="✨ Cheer Up / Pet", command=lambda: self.on_pet and self.on_pet())
+        self.menu.add_command(label="🎓 Focus Sprint (Pomodoro)", command=lambda: self.on_toggle_focus and self.on_toggle_focus())
+        self.menu.add_command(label="💤 Sleep / Wake", command=lambda: self.on_toggle_sleep and self.on_toggle_sleep())
+        self.menu.add_separator()
+
+        # Wardrobe Submenu
+        color_menu = tk.Menu(self.menu, tearoff=0, bg="#FFFFFF", fg="#2C3E50", activebackground="#FFD1DC", activeforeground="#18181D")
         colors = [
-            ("Blossom Pink", "#FFB6C1"),
-            ("Mint Sage", "#B5EAD7"),
-            ("Sky Blue", "#A0C4FF"),
-            ("Lavender", "#D0BDF4"),
-            ("Buttercup Yellow", "#FFEAA7"),
+            ("🌸 Blossom Pink", "#FFB6C1"),
+            ("🌿 Mint Sage", "#B5EAD7"),
+            ("☁️ Sky Blue", "#A0C4FF"),
+            ("🔮 Lavender", "#D0BDF4"),
+            ("🌼 Buttercup", "#FFEAA7"),
+            ("🍑 Peach Sorbet", "#FFDAC1"),
+            ("🤍 Cotton White", "#FFFFFF"),
         ]
         for name, code in colors:
             color_menu.add_command(label=name, command=lambda c=code: self.on_change_color and self.on_change_color(c))
-        self.menu.add_cascade(label="Change Skin Color 🎨", menu=color_menu)
+        self.menu.add_cascade(label="🎨 Quick Wardrobe Colors", menu=color_menu)
+        self.menu.add_command(label="⚙️ Preferences & Wardrobe...", font=("Segoe UI", 9, "bold"), command=lambda: self.on_open_preferences and self.on_open_preferences())
 
         self.menu.add_separator()
         toggle_hk = self.hotkeys_config.get("toggle_visibility", "Alt+Q").upper()
-        self.menu.add_command(label=f"Dismiss / Summon ({toggle_hk})", command=self.toggle_visibility)
-        self.menu.add_command(label="Preferences & Wardrobe ⚙️", command=lambda: self.on_open_preferences and self.on_open_preferences())
-        self.menu.add_command(label="Exit Desktop Pet", command=self.close)
+        self.menu.add_command(label=f"👁️ Dismiss / Summon ({toggle_hk})", command=self.toggle_visibility)
+        self.menu.add_command(label="🚪 Quit Mochi", command=self.close)
 
     def _show_context_menu(self, event) -> None:
         try:

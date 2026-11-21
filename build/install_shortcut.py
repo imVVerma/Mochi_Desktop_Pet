@@ -1,6 +1,6 @@
 """
-Installer script to create Windows Start Menu, Desktop, and Startup shortcuts for Mochi Desktop Pet.
-Enables Windows Search Bar integration (searching 'Mochi') and global hotkey triggering.
+Installer script to create Windows Start Menu, Desktop, and Startup shortcuts for Desktop Pet.
+Enables Windows Search Bar integration (searching by pet name) and global hotkey triggering.
 """
 import ctypes
 import json
@@ -9,25 +9,39 @@ import sys
 import subprocess
 
 
-def install_shortcuts(enable_startup: bool = True, custom_hotkey: str = None) -> None:
+def install_shortcuts(
+    enable_startup: bool = True,
+    custom_hotkey: str = None,
+    pet_name: str = None,
+    old_pet_name: str = None,
+) -> None:
     ws = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     target_exe = os.path.join(ws, "dist", "DesktopPet.exe")
     icon_path = os.path.join(ws, "build", "icon.ico")
     config_file = os.path.join(ws, "config.json")
 
-    # Read hotkey from config if not explicitly provided
+    # Read config if params not explicitly provided
     hotkey = custom_hotkey
-    if not hotkey and os.path.exists(config_file):
+    active_name = pet_name
+    if os.path.exists(config_file):
         try:
             with open(config_file, "r", encoding="utf-8") as f:
                 cfg = json.load(f)
-                hotkey = cfg.get("hotkeys", {}).get("toggle_visibility", "Alt+Q")
+                if not hotkey:
+                    hotkey = cfg.get("hotkeys", {}).get("toggle_visibility", "Alt+Q")
+                if not active_name:
+                    active_name = cfg.get("pet_name", "Mochi")
         except Exception:
-            hotkey = "Alt+Q"
+            pass
+
+    if not active_name:
+        active_name = "Mochi"
+    if not hotkey:
+        hotkey = "Alt+Q"
 
     if not os.path.exists(target_exe):
-        print(f"[ERROR] Target binary not found at: {target_exe}")
-        sys.exit(1)
+        # Fallback to python runner if standalone exe not yet compiled
+        target_exe = sys.executable
 
     appdata = os.environ.get("APPDATA", "")
     userprofile = os.environ.get("USERPROFILE", "")
@@ -36,18 +50,38 @@ def install_shortcuts(enable_startup: bool = True, custom_hotkey: str = None) ->
     desktop_dir = os.path.join(userprofile, "Desktop")
     startup_dir = os.path.join(appdata, "Microsoft", "Windows", "Start Menu", "Programs", "Startup")
 
+    # Remove old shortcut name if pet was renamed
+    if old_pet_name and old_pet_name.lower() != active_name.lower():
+        old_shortcuts = [
+            os.path.join(start_menu_dir, f"{old_pet_name} Desktop Pet.lnk"),
+            os.path.join(desktop_dir, f"{old_pet_name} Desktop Pet.lnk"),
+            os.path.join(startup_dir, f"{old_pet_name} Desktop Pet.lnk"),
+            # Also check generic default
+            os.path.join(start_menu_dir, "Mochi Desktop Pet.lnk"),
+            os.path.join(desktop_dir, "Mochi Desktop Pet.lnk"),
+            os.path.join(startup_dir, "Mochi Desktop Pet.lnk"),
+        ]
+        for old_lnk in old_shortcuts:
+            try:
+                if os.path.exists(old_lnk):
+                    os.remove(old_lnk)
+            except Exception:
+                pass
+
     # Format hotkey for Windows Shell shortcut (Capitalized e.g. 'Alt+Q' or 'Ctrl+Shift+B')
     formatted_hotkey = ""
     if hotkey:
         formatted_hotkey = "+".join(p.capitalize() for p in hotkey.replace("+", " ").split())
 
+    shortcut_filename = f"{active_name} Desktop Pet.lnk"
+
     shortcuts = [
-        ("Start Menu", os.path.join(start_menu_dir, "Mochi Desktop Pet.lnk"), formatted_hotkey),
-        ("Desktop", os.path.join(desktop_dir, "Mochi Desktop Pet.lnk"), ""),
+        ("Start Menu", os.path.join(start_menu_dir, shortcut_filename), formatted_hotkey),
+        ("Desktop", os.path.join(desktop_dir, shortcut_filename), ""),
     ]
 
     if enable_startup:
-        shortcuts.append(("Startup", os.path.join(startup_dir, "Mochi Desktop Pet.lnk"), ""))
+        shortcuts.append(("Startup", os.path.join(startup_dir, shortcut_filename), ""))
 
     vbs_commands = []
     vbs_commands.append('Set oWS = WScript.CreateObject("WScript.Shell")')
@@ -64,7 +98,7 @@ def install_shortcuts(enable_startup: bool = True, custom_hotkey: str = None) ->
         vbs_commands.append(f'oLink.WorkingDirectory = "{esc_ws}"')
         if os.path.exists(icon_path):
             vbs_commands.append(f'oLink.IconLocation = "{esc_icon}"')
-        vbs_commands.append('oLink.Description = "Mochi Desktop Pet - Virtual Desk Companion"')
+        vbs_commands.append(f'oLink.Description = "{active_name} Desktop Pet - Virtual Desk Companion"')
         if hk:
             vbs_commands.append(f'oLink.Hotkey = "{hk}"')
         vbs_commands.append('oLink.Save')
@@ -78,24 +112,16 @@ def install_shortcuts(enable_startup: bool = True, custom_hotkey: str = None) ->
 
         res = subprocess.run(["cscript", "//nologo", temp_vbs], capture_output=True, text=True)
         if res.returncode == 0:
-            print("[SUCCESS] Installed shortcuts for Mochi Desktop Pet:")
-            for name, lnk_path, hk in shortcuts:
-                hk_info = f" (Hotkey: {hk})" if hk else ""
-                print(f"  - {name}: {lnk_path}{hk_info}")
-            print("\nYou can now press the Win key, search 'Mochi', and launch directly!")
-            if formatted_hotkey:
-                print(f"Global in-app & shortcut hotkey '{formatted_hotkey}' is configured.")
-
             # Flush Windows Shell shortcut cache
             if sys.platform == "win32":
                 try:
                     # SHCNE_ALLEVENTS = 0x08000000, SHCNF_FLUSH = 0x1000
                     ctypes.windll.shell32.SHChangeNotify(0x08000000, 0x1000, None, None)
-                    print("Refreshed Windows Shell shortcut table.")
                 except Exception:
                     pass
+            return True
         else:
-            print(f"[ERROR] Failed creating shortcuts: {res.stderr}")
+            return False
     finally:
         if os.path.exists(temp_vbs):
             os.remove(temp_vbs)
@@ -104,8 +130,16 @@ def install_shortcuts(enable_startup: bool = True, custom_hotkey: str = None) ->
 if __name__ == "__main__":
     enable_startup = "--no-startup" not in sys.argv
     custom_hk = None
+    pet_name = None
     if "--hotkey" in sys.argv:
         idx = sys.argv.index("--hotkey")
         if idx + 1 < len(sys.argv):
             custom_hk = sys.argv[idx + 1]
-    install_shortcuts(enable_startup=enable_startup, custom_hotkey=custom_hk)
+    if "--name" in sys.argv:
+        idx = sys.argv.index("--name")
+        if idx + 1 < len(sys.argv):
+            pet_name = sys.argv[idx + 1]
+
+    ok = install_shortcuts(enable_startup=enable_startup, custom_hotkey=custom_hk, pet_name=pet_name)
+    if ok:
+        print("[SUCCESS] Windows shortcuts updated successfully.")
