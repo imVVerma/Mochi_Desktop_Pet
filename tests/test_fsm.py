@@ -99,3 +99,33 @@ def test_circadian_bedtime_transition():
     fsm.stats.last_user_activity = 0.0  # far in the past
     fsm.tick()
     assert fsm.state == State.SLEEPING
+
+
+def test_inactivity_docks_at_home_corner():
+    """Invariant: After moments of user inactivity, pet autonomously returns to dock at bottom-right corner."""
+    fsm = create_test_fsm(daytime_only=True)
+    # Place pet away from home corner
+    fsm.physics.x = 400.0
+    fsm.transition_to(State.WANDERING)
+    assert not fsm.physics.is_near_home(25)
+
+    # Active interaction keeps pet wandering
+    fsm.stats.record_interaction()
+    fsm.tick()
+    assert fsm.state == State.WANDERING
+
+    # Inactivity occurs (e.g. user leaves pet alone)
+    fsm.stats.last_pet_interaction = 0.0
+    fsm.tick()
+    # Pet should autonomously enter RETURNING_HOME
+    assert fsm.state == State.RETURNING_HOME
+
+    # Step until arrived at home corner
+    for _ in range(500):
+        fsm.tick()
+        if fsm.physics.is_near_home(25):
+            break
+
+    assert fsm.physics.is_near_home(25)
+    # Once docked, pet settles into IDLE (corner loaf)
+    assert fsm.state in [State.IDLE, State.RETURNING_HOME]

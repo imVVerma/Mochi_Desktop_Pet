@@ -29,7 +29,8 @@
   "circadian": {
     "bedtime_hour": 23,
     "wake_hour": 7,
-    "idle_sleep_seconds": 180
+    "idle_sleep_seconds": 180,
+    "idle_dock_seconds": 15
   },
   "hotkeys": {
     "toggle_visibility": "ctrl+shift+b",

@@ -66,10 +66,12 @@ class PetFSM:
 
     def on_mouse_press(self) -> None:
         """Immediate interruption guarantee: user grab overrides any autonomous state."""
+        self.stats.record_interaction()
         self.transition_to(State.DRAGGED)
 
     def on_mouse_release(self, vx: float, vy: float) -> None:
         """Handles releasing the pet with fling trajectory."""
+        self.stats.record_interaction()
         if abs(vx) > 2.0 or vy < -2.0 or not self.physics.is_grounded:
             self.transition_to(State.FALLING)
         else:
@@ -82,6 +84,7 @@ class PetFSM:
 
     def on_petting(self) -> None:
         """Right-click or petting interaction."""
+        self.stats.record_interaction()
         self.stats.pet_interaction()
         if self.state == State.SLEEPING:
             # Waking up
@@ -91,7 +94,10 @@ class PetFSM:
 
     def on_mouse_proximity(self, dist: float) -> None:
         """Reacts when the mouse cursor enters close vicinity."""
-        self.stats.record_activity()
+        if dist < 120.0:
+            self.stats.record_interaction()
+        else:
+            self.stats.record_activity()
         if self.state in [State.IDLE, State.WANDERING] and dist < 85.0:
             self.stats.curiosity = min(100.0, self.stats.curiosity + 10.0)
             self.transition_to(State.EXCITED)
@@ -161,7 +167,15 @@ class PetFSM:
             self.transition_to(State.SLEEPING)
             return
 
-        # Circadian / Idle Bedtime Invariant
+        # Inactivity & Bedtime Corner Docking Invariant:
+        # After moments of inactivity or at bedtime, Mochi returns home to dock in the bottom-right corner
+        if self.state not in [State.SLEEPING, State.TIRED, State.FOCUS, State.RETURNING_HOME]:
+            if not self.physics.is_near_home(threshold=25.0):
+                if self.stats.is_inactive_for_docking() or self.stats.is_circadian_bedtime() or self.stats.is_user_idle():
+                    self.transition_to(State.RETURNING_HOME)
+                    return
+
+        # Circadian / Idle Bedtime Invariant (once stationed at home corner)
         if self.state not in [State.SLEEPING, State.TIRED, State.FOCUS]:
             if self.stats.is_circadian_bedtime() or self.stats.is_user_idle():
                 self.transition_to(State.SLEEPING)
@@ -195,6 +209,14 @@ class PetFSM:
 
     def _decide_next_autonomous_state(self) -> None:
         """Selects the next behavior based on personality, happiness, and curiosity."""
+        # If user is inactive, prefer to return home or remain docked in cozy corner loaf
+        if self.stats.is_inactive_for_docking():
+            if not self.physics.is_near_home(threshold=25.0):
+                self.transition_to(State.RETURNING_HOME)
+            else:
+                self.transition_to(State.IDLE)
+            return
+
         choices = [State.IDLE, State.WANDERING]
         weights = [4, 5]
 

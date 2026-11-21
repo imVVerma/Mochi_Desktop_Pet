@@ -43,6 +43,7 @@ class PetEngine:
             bedtime_hour=circadian_cfg.get("bedtime_hour", 23),
             wake_hour=circadian_cfg.get("wake_hour", 7),
             idle_sleep_seconds=circadian_cfg.get("idle_sleep_seconds", 180),
+            idle_dock_seconds=circadian_cfg.get("idle_dock_seconds", 15),
         )
 
         # Wire wellness reminder messages
@@ -100,22 +101,22 @@ class PetEngine:
                 logger.debug("Failed dispatching callback to main UI thread: %s", e)
 
     def handle_press(self, cursor_x: float, cursor_y: float) -> None:
-        self.stats.record_activity()
+        self.stats.record_interaction()
         self.physics.start_drag(cursor_x, cursor_y)
         self.fsm.on_mouse_press()
 
     def handle_drag(self, cursor_x: float, cursor_y: float, grab_ox: float, grab_oy: float) -> None:
-        self.stats.record_activity()
+        self.stats.record_interaction()
         self.physics.update_drag(cursor_x, cursor_y, grab_ox, grab_oy)
         self.window.set_position(self.physics.x, self.physics.y)
 
     def handle_release(self) -> None:
-        self.stats.record_activity()
+        self.stats.record_interaction()
         vx, vy = self.physics.release_drag()
         self.fsm.on_mouse_release(vx, vy)
 
     def handle_pet(self) -> None:
-        self.stats.record_activity()
+        self.stats.record_interaction()
         self.fsm.on_petting()
         self.renderer.spawn_particle("♥", "#FF4081", size=14)
         quotes = ["I love you! ✨", "Hehe, that tickles! 🌸", "Best friends! 💖", "Yay! 🎉"]
@@ -181,6 +182,9 @@ class PetEngine:
             rel_mx = mx - center_x
             rel_my = my - center_y
             dist = math.hypot(rel_mx, rel_my)
+
+            if dist < 120.0:
+                self.stats.record_interaction()
 
             self.fsm.on_mouse_proximity(dist)
 

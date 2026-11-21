@@ -15,6 +15,7 @@ class PetStats:
         bedtime_hour: int = 23,
         wake_hour: int = 7,
         idle_sleep_seconds: int = 180,
+        idle_dock_seconds: int = 15,
     ):
         self.energy: float = max(0.0, min(100.0, energy))
         self.happiness: float = max(0.0, min(100.0, happiness))
@@ -23,9 +24,11 @@ class PetStats:
         self.bedtime_hour = bedtime_hour
         self.wake_hour = wake_hour
         self.idle_sleep_seconds = idle_sleep_seconds
+        self.idle_dock_seconds = idle_dock_seconds
 
-        # User activity tracking
+        # User activity and pet interaction tracking
         self.last_user_activity: float = time.time()
+        self.last_pet_interaction: float = time.time()
 
         # Pomodoro / Focus Mode
         self.focus_active: bool = False
@@ -51,6 +54,18 @@ class PetStats:
     def record_activity(self) -> None:
         """Called whenever the user moves the mouse, clicks, or types."""
         self.last_user_activity = time.time()
+
+    def record_interaction(self) -> None:
+        """Called whenever the user interacts directly with or hovers near Mochi."""
+        now = time.time()
+        self.last_user_activity = now
+        self.last_pet_interaction = now
+
+    def is_inactive_for_docking(self) -> bool:
+        """Returns True if the user has not interacted with Mochi for idle_dock_seconds."""
+        now = time.time()
+        interaction_time = getattr(self, "last_pet_interaction", self.last_user_activity)
+        return (now - interaction_time) >= self.idle_dock_seconds
 
     def is_user_idle(self) -> bool:
         return (time.time() - self.last_user_activity) >= self.idle_sleep_seconds
