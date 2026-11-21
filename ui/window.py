@@ -13,6 +13,7 @@ MOD_ALT = 0x0001
 MOD_CONTROL = 0x0002
 MOD_SHIFT = 0x0004
 MOD_WIN = 0x0008
+VK_TAB = 0x09
 VK_B = 0x42
 VK_F = 0x46
 VK_P = 0x50
@@ -185,13 +186,15 @@ class PetWindow:
             ID_TOGGLE = 101
             ID_FOCUS = 102
             ID_PET = 103
+            ID_TOGGLE_SHIFT_TAB = 104
 
             # RegisterHotKey does NOT require Administrator rights!
             r1 = user32.RegisterHotKey(None, ID_TOGGLE, MOD_CONTROL | MOD_SHIFT, VK_B)
             r2 = user32.RegisterHotKey(None, ID_FOCUS, MOD_CONTROL | MOD_SHIFT, VK_F)
             r3 = user32.RegisterHotKey(None, ID_PET, MOD_CONTROL | MOD_SHIFT, VK_P)
+            r4 = user32.RegisterHotKey(None, ID_TOGGLE_SHIFT_TAB, MOD_SHIFT, VK_TAB)
 
-            if not (r1 or r2 or r3):
+            if not (r1 or r2 or r3 or r4):
                 logger.debug("Win32 RegisterHotKey returned False for one or more keys.")
 
             class MSG(ctypes.Structure):
@@ -211,7 +214,7 @@ class PetWindow:
                 if user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, 1):
                     if msg.message == WM_HOTKEY:
                         hk_id = msg.wParam
-                        if hk_id == ID_TOGGLE:
+                        if hk_id in (ID_TOGGLE, ID_TOGGLE_SHIFT_TAB):
                             self.root.after(0, self.toggle_visibility)
                         elif hk_id == ID_FOCUS and self.on_toggle_focus:
                             self.root.after(0, self.on_toggle_focus)
@@ -225,6 +228,7 @@ class PetWindow:
             user32.UnregisterHotKey(None, ID_TOGGLE)
             user32.UnregisterHotKey(None, ID_FOCUS)
             user32.UnregisterHotKey(None, ID_PET)
+            user32.UnregisterHotKey(None, ID_TOGGLE_SHIFT_TAB)
 
         self._hotkey_thread = threading.Thread(target=hotkey_worker, daemon=True)
         self._hotkey_thread.start()

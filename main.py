@@ -22,11 +22,18 @@ if sys.stderr is None:
 
 
 class SingleInstanceLock:
-    """Ensures only one instance of Desktop Pet runs at a time using a named Windows Mutex."""
+    """Ensures only one instance of Desktop Pet runs at a time using a named Windows Mutex,
+    and signals the running instance to toggle visibility (open/close) when triggered again."""
 
-    def __init__(self, name: str = "DesktopPet_SingleInstance_Mutex_Global"):
+    def __init__(
+        self,
+        name: str = "DesktopPet_SingleInstance_Mutex_Global",
+        event_name: str = "DesktopPet_ToggleEvent_Global",
+    ):
         self.name = name
+        self.event_name = event_name
         self.mutex = None
+        self.toggle_event = None
         self.already_running = False
 
         if sys.platform == "win32":
@@ -35,10 +42,24 @@ class SingleInstanceLock:
                 # ERROR_ALREADY_EXISTS = 183
                 if ctypes.windll.kernel32.GetLastError() == 183:
                     self.already_running = True
+                    # Signal existing instance to toggle open/close
+                    EVENT_MODIFY_STATE = 0x0002
+                    h_event = ctypes.windll.kernel32.OpenEventW(EVENT_MODIFY_STATE, False, self.event_name)
+                    if h_event:
+                        ctypes.windll.kernel32.SetEvent(h_event)
+                        ctypes.windll.kernel32.CloseHandle(h_event)
+                else:
+                    self.toggle_event = ctypes.windll.kernel32.CreateEventW(None, False, False, self.event_name)
             except Exception:
                 self.already_running = False
 
     def release(self):
+        if self.toggle_event and sys.platform == "win32":
+            try:
+                ctypes.windll.kernel32.CloseHandle(self.toggle_event)
+            except Exception:
+                pass
+            self.toggle_event = None
         if self.mutex and sys.platform == "win32":
             try:
                 ctypes.windll.kernel32.CloseHandle(self.mutex)
@@ -87,7 +108,7 @@ def main():
     # Check single-instance lock to prevent infinite execution / error loops
     lock = SingleInstanceLock()
     if lock.already_running:
-        logger.info("Another instance of Desktop Pet is already running. Exiting cleanly without error.")
+        logger.info("Another instance of Desktop Pet is already running. Signaled existing instance to toggle open/close. Exiting cleanly.")
         sys.exit(0)
 
     from core.physics import enable_high_dpi_awareness
@@ -102,7 +123,7 @@ def main():
     logger.info("Initializing Desktop Pet...")
 
     try:
-        engine = PetEngine(config_path=args.config)
+        engine = PetEngine(config_path=args.config, toggle_event=lock.toggle_event)
         logger.info("Desktop Pet running. Press Ctrl+C, Ctrl+Shift+B, or right-click to exit.")
         engine.start()
     except KeyboardInterrupt:

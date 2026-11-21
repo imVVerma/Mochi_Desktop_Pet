@@ -16,8 +16,9 @@ logger = logging.getLogger("DesktopPet.Engine")
 class PetEngine:
     """Central coordinator for Desktop Pet: links FSM, physics, stats, UI, hotkeys, and tray."""
 
-    def __init__(self, config_path: str = "config.json"):
+    def __init__(self, config_path: str = "config.json", toggle_event=None):
         self.config_manager = ConfigManager(config_path)
+        self.toggle_event = toggle_event
 
         # Initialize physical properties from config
         scale = float(self.config_manager.get("scale", 1.0))
@@ -258,7 +259,18 @@ class PetEngine:
                     pass
 
     def start(self) -> None:
-        """Starts main event loop."""
+        """Starts main event loop and toggle event listener."""
+        if self.toggle_event and sys.platform == "win32":
+            def toggle_listener():
+                kernel32 = ctypes.windll.kernel32
+                while self.is_running and self.toggle_event:
+                    res = kernel32.WaitForSingleObject(self.toggle_event, 200)
+                    if res == 0:  # WAIT_OBJECT_0
+                        self._dispatch_to_main_thread(self.window.toggle_visibility)
+
+            self._toggle_thread = threading.Thread(target=toggle_listener, daemon=True)
+            self._toggle_thread.start()
+
         self.update_loop()
         self.wall_clock_loop()
         self.window.root.mainloop()
