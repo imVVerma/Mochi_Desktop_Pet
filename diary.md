@@ -122,3 +122,15 @@ A living development log of every session, design decision, architectural pivot,
 * **Documentation:** Updated the Android and root READMEs and marked the completed work in `UI_UX_PLAN.md`.
 * **Files edited:** `mobile/flutter_companion/lib/main.dart`, `mobile/flutter_companion/README.md`, `README.md`, `UI_UX_PLAN.md`, and `diary.md`.
 * **Verification:** Dart formatting completed. No test suite or APK build was run in this session.
+
+---
+
+## Session 10: Test Build Versioning and Windows Preview Visibility (Nov 25, 2026)
+**Focus:** Make the updated APK install over the user's existing Android build and make the Windows preview notice easier to find.
+
+* **Android APK:** The user's device reported installed version code `2001` while the generated APK was `1`. Bumped the Flutter version to `1.0.1+2002` and successfully built a release APK at `mobile/flutter_companion/build/app/outputs/flutter-apk/app-release.apk` (45.0 MB).
+* **Windows EXE:** Changed the settings subtitle to bold lavender `PREVIEW • Save & Apply updates Mochi`. A normal build could not replace the existing `dist/DesktopPet.exe` because Windows denied access to that file, even after an elevated retry. Built a separate updated executable at `build/desktop_preview/dist/DesktopPet-Preview.exe` so the existing binary is preserved.
+* **Build script:** Added error checks to `build/build.bat`; it now exits on icon or PyInstaller failure instead of printing a false success message.
+* **Documentation:** Corrected the Android release APK path and documented the current version code and install command.
+* **Files edited:** `mobile/flutter_companion/pubspec.yaml`, `mobile/flutter_companion/README.md`, `ui/settings_dialog.py`, `build/build.bat`, `README.md`, and `diary.md`.
+* **Verification:** Release APK and separate Windows preview EXE built successfully. Installed the release APK to the connected Android device via ADB. Standard EXE replacement failed with `PermissionError` on `dist/DesktopPet.exe`; the alternate preview EXE is available for review. No automated test suite was run.

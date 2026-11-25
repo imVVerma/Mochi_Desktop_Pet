@@ -131,10 +131,10 @@ class SettingsDialog:
 
         self.lbl_header_sub = tk.Label(
             info_frame,
-            text="Preview only • Save & Apply to update Mochi",
-            font=("Segoe UI", 9),
+            text="PREVIEW • Save & Apply updates Mochi",
+            font=("Segoe UI", 9, "bold"),
             bg="#FFFFFF",
-            fg="#7F8C8D",
+            fg="#6C5CE7",
         )
         self.lbl_header_sub.pack(anchor="w", pady=(2, 0))
 

@@ -1,7 +1,7 @@
 name: mochi_companion
 description: "Mochi Floppy Bunny - Cross-Platform Mobile Companion (Wispr Flow Model)"
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.1+2002
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

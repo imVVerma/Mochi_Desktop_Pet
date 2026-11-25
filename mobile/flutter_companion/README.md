@@ -21,13 +21,19 @@ flutter pub get
 flutter run
 ```
 
-Build a release APK with:
+The current Android build is version `1.0.1` (version code `2002`), so it can update a device that has version code `2001` installed. Build it with:
 
 ```bash
 flutter build apk --release
 ```
 
-For smaller per-device release packages, use `flutter build apk --release --split-per-abi`. The resulting APKs are written under `build/app/outputs/flutter-apk/`.
+The APK is written to `build/app/outputs/flutter-apk/app-release.apk`. Install it from this directory with:
+
+```bash
+adb install -r build/app/outputs/flutter-apk/app-release.apk
+```
+
+For smaller per-device release packages, use `flutter build apk --release --split-per-abi`. The resulting APKs are also written under `build/app/outputs/flutter-apk/`.
 
 ## Main UI files
 

@@ -141,11 +141,11 @@ flutter pub get
 flutter run
 ```
 
-#### Compiling Debug / Release APK:
+#### Compiling a Release APK:
 ```bash
-flutter build apk --debug
+flutter build apk --release
 ```
-The compiled APK will be located at `dist/mobile/MochiCompanion.apk` (and `build/app/outputs/flutter-apk/app-debug.apk`).
+The compiled APK will be located at `mobile/flutter_companion/build/app/outputs/flutter-apk/app-release.apk`. Its Android version code is maintained in `mobile/flutter_companion/pubspec.yaml` so updates can be installed over previous builds.
 
 ---
 
