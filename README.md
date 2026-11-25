@@ -49,6 +49,8 @@
 * **Tactile Haptic Feedback**: Feel soft ticks when picking up or placing Mochi.
 * **Magnetic Edge Docking**: Fling Mochi toward the edge and watch him smoothly dock to either margin.
 * **Tap Reactions**: Tap Mochi while using any app to hear cute speech bubbles and cheer-ups.
+* **In-App Focus Timer**: Start a 25-minute focus countdown from the Android companion screen, pause or resume it, and record focus minutes when it completes.
+* **Sanctuary Interactions**: The full-body character stays in its own draggable area, and petting, feeding, or finishing a focus sprint triggers a brief bounce.
 
 ### 🔍 Windows Search Bar Sync
 * Press the **Windows Key**, type `Mochi` (or whatever custom name you give your pet in the wardrobe), and press **Enter** to instantly summon or dismiss your companion!
@@ -79,6 +81,7 @@
 * **Fling**: Flick toward either side to magnetically snap to the nearest margin.
 * **Single Tap**: Trigger heart sparkles and supportive speech bubbles.
 * **Float Toggle**: Tap **`✨ Float Over Other Apps`** inside the app to enable or dismiss the floating companion.
+* **Focus Timer**: Start a 25-minute session from the sanctuary screen; pause and resume are available, and only completed sessions count toward focus minutes.
 
 ---
 
@@ -194,6 +197,7 @@ Mochi_Desktop_Pet/
 * **iOS Live Activities**: Dynamic Island companion on iPhone 14 Pro/15/16.
 
 For full architectural details, see **[ROADMAP.md](ROADMAP.md)**.
+For the separate Windows and Android UI direction, motion ideas, and implementation order, see **[UI_UX_PLAN.md](UI_UX_PLAN.md)**.
 
 ---
 

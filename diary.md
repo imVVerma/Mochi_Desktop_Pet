@@ -98,3 +98,27 @@ A living development log of every session, design decision, architectural pivot,
     4. 🐼 **Bao (Chubby Panda):** Round dark ears, iconic black eye patches, white chubby head, dark torso vest, stubby tail.
   * **AI / Photo Upload Extensibility:** Established `SpriteCharacterModel` specification to allow future users to upload any photo, clipart, or drawing and have an LLM convert it into full-body and face-badge sprite configurations.
   * **Living Diary:** Initialized this `diary.md` to permanently document all past and future development phases.
+
+---
+
+## Session 8: UI/UX Review and Focus Timer Correction (Nov 25, 2026)
+**Focus:** Separate Windows and Android UX, fix misleading focus-session behavior, and align the documentation with the current implementation.
+
+* **Windows `.exe`:** Clarified in the preferences header that the avatar is a preview and changes apply to Mochi only after **Save & Apply**. This prevents the dialog preview from implying that the running pet has already changed.
+* **Android APK:** Replaced the focus action's immediate credit with a 25-minute countdown that can be paused and resumed. Focus minutes are now recorded only after completion. The screen reports paused and completed states, and focus minutes display as a value instead of a misleading full progress bar.
+* **Android visual consistency:** Set the Material theme seed to the lavender accent already used by the character selector and primary overlay action.
+* **Documentation:** Replaced the default Flutter README with a product-specific guide, documented the focus timer's process-lifetime limitation, described the current mobile focus flow in the root README, and added a platform-separated UI/UX direction and implementation order.
+* **Review notes for follow-up:** The desktop renderer's normal idle color cycle can compete with a user-selected fur color; the in-app avatar overlap was addressed in Session 9; and a running focus countdown is not restored if Android kills the app process. These remain separate follow-up items.
+* **Files edited:** `mobile/flutter_companion/lib/main.dart`, `mobile/flutter_companion/README.md`, `ui/settings_dialog.py`, `README.md`, `UI_UX_PLAN.md`, and `diary.md`.
+* **Verification:** No test suite or build was run in this session.
+
+---
+
+## Session 9: Android Sanctuary Layout and Interaction Motion (Nov 25, 2026)
+**Focus:** Keep the in-app companion clear of dashboard controls and add restrained feedback animations.
+
+* **Android layout:** Replaced the full-screen floating avatar placement with a dedicated hero area in the sanctuary flow. Pet dragging and edge snapping are bounded to this region, while the page scrolls when the available height is short.
+* **Interaction motion:** Added a short bounce reaction when petting, feeding, and completing a focus session. The existing idle breathing and blink loop remains the ambient motion.
+* **Documentation:** Updated the Android and root READMEs and marked the completed work in `UI_UX_PLAN.md`.
+* **Files edited:** `mobile/flutter_companion/lib/main.dart`, `mobile/flutter_companion/README.md`, `README.md`, `UI_UX_PLAN.md`, and `diary.md`.
+* **Verification:** Dart formatting completed. No test suite or APK build was run in this session.

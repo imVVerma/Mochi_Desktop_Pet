@@ -131,7 +131,7 @@ class SettingsDialog:
 
         self.lbl_header_sub = tk.Label(
             info_frame,
-            text=f"Style: {self.var_accessory.get()} • Custom Desk Companion",
+            text="Preview only • Save & Apply to update Mochi",
             font=("Segoe UI", 9),
             bg="#FFFFFF",
             fg="#7F8C8D",
@@ -430,7 +430,6 @@ class SettingsDialog:
 
     def _select_accessory(self, acc_id: str) -> None:
         self.var_accessory.set(acc_id)
-        self.lbl_header_sub.config(text=f"Style: {acc_id} • Custom Desk Companion")
         self._refresh_accessory_highlights()
         self._redraw_avatar_preview()
 

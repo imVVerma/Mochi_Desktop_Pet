@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,7 +19,7 @@ class MochiCompanionApp extends StatelessWidget {
       title: 'Mochi Pet Companion',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFFB7B2)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C5CE7)),
         useMaterial3: true,
         fontFamily: 'Roboto',
       ),
@@ -31,21 +32,26 @@ class FloatingCompanionScreen extends StatefulWidget {
   const FloatingCompanionScreen({super.key});
 
   @override
-  State<FloatingCompanionScreen> createState() => _FloatingCompanionScreenState();
+  State<FloatingCompanionScreen> createState() =>
+      _FloatingCompanionScreenState();
 }
 
 class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   static const _overlayChannel = MethodChannel('com.mochi.companion/overlay');
 
   late final AnimationController _animController;
+  late final AnimationController _reactionController;
   final PetState _petState = PetState();
 
-  Offset _position = const Offset(120, 300);
+  Offset _position = Offset.zero;
+  bool _hasPetPosition = false;
   bool _isDragging = false;
   String? _currentSpeech;
   bool _isFloatingActive = false;
   bool _isFocusing = false;
+  Duration _focusRemaining = const Duration(minutes: 25);
+  Timer? _focusTimer;
 
   @override
   void initState() {
@@ -55,6 +61,10 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat();
+    _reactionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 440),
+    );
 
     _refreshStatsAndOverlayStatus();
   }
@@ -62,7 +72,9 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _focusTimer?.cancel();
     _animController.dispose();
+    _reactionController.dispose();
     super.dispose();
   }
 
@@ -102,7 +114,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
           final shouldProceed = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               title: const Text('Enable Floating Mochi 🐾'),
               content: const Text(
                 'Mochi needs permission to "Display over other apps" so he can float over your screen while you use WhatsApp, YouTube, and other apps.\n\nTap "Open Settings" and enable Mochi Companion.',
@@ -141,7 +154,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
           setState(() => _isFloatingActive = true);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('🐾 Mochi is now floating over your screen! Feel free to switch to any app.'),
+              content: Text(
+                  '🐾 Mochi is now floating over your screen! Feel free to switch to any app.'),
               backgroundColor: Color(0xFF6C5CE7),
               duration: Duration(seconds: 4),
             ),
@@ -158,6 +172,7 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
   }
 
   Future<void> _onPetTapped() async {
+    _playPetReaction();
     try {
       final dynamic res = await _overlayChannel.invokeMethod('petMochi');
       if (res is Map && mounted) {
@@ -182,10 +197,12 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
   }
 
   Future<void> _onFeedTapped() async {
+    _playPetReaction();
     try {
       final dynamic res = await _overlayChannel.invokeMethod('feedTreat');
       if (res is Map && mounted) {
-        final reaction = res['reaction'] as String? ?? 'Yum! Crunchy strawberry! 🍓';
+        final reaction =
+            res['reaction'] as String? ?? 'Yum! Crunchy strawberry! 🍓';
         final stats = res['stats'] as Map?;
         setState(() {
           _currentSpeech = reaction;
@@ -206,31 +223,61 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
   }
 
   Future<void> _onFocusSessionTapped() async {
-    try {
-      final dynamic res = await _overlayChannel.invokeMethod('recordFocusSession', {'minutes': 25});
-      if (res is Map && mounted) {
-        final reaction = res['reaction'] as String? ?? 'Great 25 min focus sprint! 🎓';
-        final stats = res['stats'] as Map?;
-        setState(() {
-          _currentSpeech = reaction;
-          _isFocusing = true;
-          if (stats != null) _petState.updateFromMap(stats);
-        });
-      }
-    } catch (_) {
-      setState(() {
-        _currentSpeech = 'Great 25 min focus sprint! 🎓';
-      });
+    if (_isFocusing) {
+      _focusTimer?.cancel();
+      setState(() => _isFocusing = false);
+      return;
     }
 
-    Future.delayed(const Duration(milliseconds: 4000), () {
-      if (mounted) {
+    if (_focusRemaining == Duration.zero) {
+      setState(() => _focusRemaining = const Duration(minutes: 25));
+    }
+    setState(() => _isFocusing = true);
+    _focusTimer?.cancel();
+    _focusTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_focusRemaining.inSeconds <= 1) {
+        timer.cancel();
         setState(() {
-          _currentSpeech = null;
+          _focusRemaining = Duration.zero;
           _isFocusing = false;
+          _currentSpeech = 'Focus session complete. Great work! 🎓';
         });
+        _playPetReaction();
+        _recordCompletedFocusSession();
+      } else {
+        setState(() => _focusRemaining -= const Duration(seconds: 1));
       }
     });
+  }
+
+  Future<void> _recordCompletedFocusSession() async {
+    try {
+      final dynamic res = await _overlayChannel.invokeMethod(
+        'recordFocusSession',
+        {'minutes': 25},
+      );
+      if (res is Map && mounted && res['stats'] is Map) {
+        setState(() => _petState.updateFromMap(res['stats'] as Map));
+      }
+    } catch (_) {
+      // Keep the completed session visible even if the overlay service is off.
+    }
+  }
+
+  String get _focusTimeLabel {
+    final minutes =
+        _focusRemaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds =
+        _focusRemaining.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  void _playPetReaction() {
+    _reactionController.forward(from: 0);
   }
 
   Future<void> _updateWardrobe({Color? color, String? accessory}) async {
@@ -244,7 +291,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
 
     try {
       final colorHex = PetState.colorToHex(newColor);
-      final dynamic updated = await _overlayChannel.invokeMethod('setAppearance', {
+      final dynamic updated =
+          await _overlayChannel.invokeMethod('setAppearance', {
         'baseColor': colorHex,
         'accessory': newAccessory,
       });
@@ -258,169 +306,222 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5F0),
-      body: Stack(
-        children: [
-          // Sanctuary Dashboard
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _petState.name,
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2C3E50),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _petState.name,
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2C3E50),
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${PetCharacter.findBySpecies(_petState.species).emoji} Floating Pocket Companion',
-                            style: const TextStyle(color: Colors.black54, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          IconButton.filledTonal(
-                            onPressed: _showCharacterSelectorSheet,
-                            icon: const Text('🐾', style: TextStyle(fontSize: 16)),
-                            tooltip: 'Choose Pet Companion',
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton.filledTonal(
-                            onPressed: _showWardrobeSheet,
-                            icon: const Icon(Icons.palette_outlined),
-                            tooltip: 'Wardrobe & Fur Color',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildStatCard(),
-                  const Spacer(),
-                  // Prominent Floating Overlay Toggle Button
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: ElevatedButton.icon(
-                      onPressed: _toggleFloatingOverlay,
-                      icon: Icon(_isFloatingActive
-                          ? Icons.visibility_off
-                          : Icons.open_in_new),
-                      label: Text(
-                        _isFloatingActive
-                            ? 'Dismiss Floating Mochi'
-                            : '✨ Summon Floating Mochi',
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: _isFloatingActive
-                            ? Colors.blueGrey.shade700
-                            : const Color(0xFF6C5CE7),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                        elevation: 4,
-                      ),
-                    ),
-                  ),
-                  _buildActionBar(),
-                ],
-              ),
-            ),
-          ),
-
-          // In-App Interactive Canvas Avatar
-          Positioned(
-            left: _position.dx,
-            top: _position.dy,
-            child: GestureDetector(
-              onPanStart: (_) => setState(() => _isDragging = true),
-              onPanUpdate: (details) {
-                setState(() {
-                  _position += details.delta;
-                });
-              },
-              onPanEnd: (_) {
-                setState(() {
-                  _isDragging = false;
-                  final snapLeft = _position.dx < size.width / 2;
-                  _position = Offset(
-                    snapLeft ? 16 : size.width - 150 - 16,
-                    _position.dy.clamp(60, size.height - 240),
-                  );
-                });
-              },
-              onTap: _onPetTapped,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_currentSpeech != null)
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: math.min(size.width - 48, 220)),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 8,
-                              offset: Offset(0, 3),
+                            Text(
+                              '${PetCharacter.findBySpecies(_petState.species).emoji} Floating Pocket Companion',
+                              style: const TextStyle(
+                                  color: Colors.black54, fontSize: 13),
                             ),
                           ],
                         ),
-                        child: Text(
-                          _currentSpeech!,
-                          textAlign: TextAlign.center,
-                          softWrap: true,
+                        Row(
+                          children: [
+                            IconButton.filledTonal(
+                              onPressed: _showCharacterSelectorSheet,
+                              icon: const Text('🐾',
+                                  style: TextStyle(fontSize: 16)),
+                              tooltip: 'Choose Pet Companion',
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filledTonal(
+                              onPressed: _showWardrobeSheet,
+                              icon: const Icon(Icons.palette_outlined),
+                              tooltip: 'Wardrobe & Fur Color',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(height: 280, child: _buildPetHero()),
+                    _buildStatCard(),
+                    const SizedBox(height: 16),
+                    // Prominent Floating Overlay Toggle Button
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ElevatedButton.icon(
+                        onPressed: _toggleFloatingOverlay,
+                        icon: Icon(_isFloatingActive
+                            ? Icons.visibility_off
+                            : Icons.open_in_new),
+                        label: Text(
+                          _isFloatingActive
+                              ? 'Dismiss Floating Mochi'
+                              : '✨ Summon Floating Mochi',
                           style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: Color(0xFF333333),
-                          ),
+                              fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: _isFloatingActive
+                              ? Colors.blueGrey.shade700
+                              : const Color(0xFF6C5CE7),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          elevation: 4,
                         ),
                       ),
                     ),
-                  AnimatedBuilder(
-                    animation: _animController,
-                    builder: (context, child) {
-                      return CustomPaint(
-                        size: const Size(150, 150),
-                        painter: PetPainter(
-                          species: _petState.species,
-                          phase: _animController.value,
-                          isDragging: _isDragging,
-                          bodyColor: _petState.primaryColor,
-                          accessory: _petState.accessory,
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                    _buildActionBar(),
+                  ],
+                ),
               ),
             ),
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildPetHero() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double petWidth = _currentSpeech == null
+            ? 150.0
+            : math.min(constraints.maxWidth, 220.0).toDouble();
+        final petHeight = _currentSpeech == null ? 150.0 : 230.0;
+        final maxLeft =
+            math.max(0.0, constraints.maxWidth - petWidth).toDouble();
+        final maxTop =
+            math.max(0.0, constraints.maxHeight - petHeight).toDouble();
+        final left = _hasPetPosition
+            ? _position.dx.clamp(0.0, maxLeft).toDouble()
+            : maxLeft / 2;
+        final top = _hasPetPosition
+            ? _position.dy.clamp(0.0, maxTop).toDouble()
+            : maxTop / 2;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFEEEAF8).withValues(alpha: 0.52),
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
+              AnimatedPositioned(
+                duration: _isDragging
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
+                curve: Curves.easeOutBack,
+                left: left,
+                top: top,
+                width: petWidth,
+                child: GestureDetector(
+                  onPanStart: (_) => setState(() {
+                    _isDragging = true;
+                    _hasPetPosition = true;
+                    _position = Offset(left, top);
+                  }),
+                  onPanUpdate: (details) => setState(() {
+                    _position = Offset(
+                      (_position.dx + details.delta.dx)
+                          .clamp(0.0, maxLeft)
+                          .toDouble(),
+                      (_position.dy + details.delta.dy)
+                          .clamp(0.0, maxTop)
+                          .toDouble(),
+                    );
+                  }),
+                  onPanEnd: (_) => setState(() {
+                    _isDragging = false;
+                    _position = Offset(
+                      _position.dx < maxLeft / 2 ? 0 : maxLeft,
+                      _position.dy.clamp(0.0, maxTop).toDouble(),
+                    );
+                  }),
+                  onTap: _onPetTapped,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_currentSpeech != null)
+                        Container(
+                          constraints: BoxConstraints(maxWidth: petWidth),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 8,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            _currentSpeech!,
+                            textAlign: TextAlign.center,
+                            softWrap: true,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                        ),
+                      AnimatedBuilder(
+                        animation: Listenable.merge(
+                            [_animController, _reactionController]),
+                        builder: (context, child) {
+                          final bounce =
+                              math.sin(_reactionController.value * math.pi);
+                          return Transform.translate(
+                            offset: Offset(0, -10 * bounce),
+                            child: Transform.scale(
+                              scale: 1 + 0.07 * bounce,
+                              child: CustomPaint(
+                                size: const Size(150, 150),
+                                painter: PetPainter(
+                                  species: _petState.species,
+                                  phase: _animController.value,
+                                  isDragging: _isDragging,
+                                  bodyColor: _petState.primaryColor,
+                                  accessory: _petState.accessory,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -444,8 +545,28 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
           const SizedBox(height: 10),
           _buildStatRow('⚡ Energy', _petState.energy, Colors.amber),
           const SizedBox(height: 10),
-          _buildStatRow('🎓 Focus Today', '${_petState.focusMinutes} min',
+          _buildStatRow('🎓 Focus today', '${_petState.focusMinutes} min',
               Colors.deepPurpleAccent),
+          if (_isFocusing ||
+              _focusRemaining != const Duration(minutes: 25)) ...[
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                    _isFocusing
+                        ? 'Focus session'
+                        : (_focusRemaining == Duration.zero
+                            ? 'Session complete'
+                            : 'Session paused'),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(_focusTimeLabel,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 13)),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -460,19 +581,23 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            Text(label,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             Text(value is int ? '$value%' : '$value',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           ],
         ),
         const SizedBox(height: 5),
-        LinearProgressIndicator(
-          value: fraction,
-          backgroundColor: Colors.grey.shade200,
-          color: barColor,
-          borderRadius: BorderRadius.circular(8),
-          minHeight: 7,
-        ),
+        if (value is int)
+          LinearProgressIndicator(
+            value: fraction,
+            backgroundColor: Colors.grey.shade200,
+            color: barColor,
+            borderRadius: BorderRadius.circular(8),
+            minHeight: 7,
+          ),
       ],
     );
   }
@@ -489,7 +614,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
               backgroundColor: const Color(0xFFFF9AA2),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
           ),
         ),
@@ -498,12 +624,14 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
           child: ElevatedButton.icon(
             onPressed: _onFeedTapped,
             icon: const Icon(Icons.restaurant, size: 18),
-            label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Treat 🍓')),
+            label:
+                const FittedBox(fit: BoxFit.scaleDown, child: Text('Treat 🍓')),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
               backgroundColor: const Color(0xFFFFB7B2),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
           ),
         ),
@@ -512,12 +640,24 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
           child: ElevatedButton.icon(
             onPressed: _onFocusSessionTapped,
             icon: const Icon(Icons.timer_outlined, size: 18),
-            label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Focus ⏱️')),
+            label: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                _isFocusing
+                    ? 'Pause $_focusTimeLabel'
+                    : (_focusRemaining == const Duration(minutes: 25)
+                        ? 'Focus 25m'
+                        : (_focusRemaining == Duration.zero
+                            ? 'Start again'
+                            : 'Resume')),
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
               backgroundColor: const Color(0xFFB39DDB),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
           ),
         ),
@@ -534,7 +674,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
 
     try {
       final colorHex = PetState.colorToHex(char.defaultColor);
-      final dynamic updated = await _overlayChannel.invokeMethod('setCharacter', {
+      final dynamic updated =
+          await _overlayChannel.invokeMethod('setCharacter', {
         'species': char.species,
         'name': char.name,
         'baseColor': colorHex,
@@ -548,7 +689,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('🐾 Switched companion to ${char.name} ${char.emoji}! Full body in app, face badge in overlay.'),
+          content: Text(
+              '🐾 Switched companion to ${char.name} ${char.emoji}! Full body in app, face badge in overlay.'),
           backgroundColor: const Color(0xFF6C5CE7),
           duration: const Duration(seconds: 3),
         ),
@@ -576,10 +718,12 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                   children: [
                     const Text(
                       '🐾 Choose Companion',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: const Color(0xFF6C5CE7).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
@@ -602,7 +746,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                 ),
                 const SizedBox(height: 16),
                 ...PetCharacter.presetCharacters.map((char) {
-                  final isSelected = _petState.species.toLowerCase() == char.species.toLowerCase();
+                  final isSelected = _petState.species.toLowerCase() ==
+                      char.species.toLowerCase();
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
                     decoration: BoxDecoration(
@@ -620,7 +765,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: char.defaultColor,
-                        child: Text(char.emoji, style: const TextStyle(fontSize: 20)),
+                        child: Text(char.emoji,
+                            style: const TextStyle(fontSize: 20)),
                       ),
                       title: Row(
                         children: [
@@ -631,7 +777,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                           if (isSelected) ...[
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF6C5CE7),
                                 borderRadius: BorderRadius.circular(8),
@@ -671,7 +818,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF6C5CE7).withValues(alpha: 0.2)),
+                    border: Border.all(
+                        color: const Color(0xFF6C5CE7).withValues(alpha: 0.2)),
                   ),
                   child: const Row(
                     children: [
@@ -692,7 +840,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                             SizedBox(height: 2),
                             Text(
                               'Upload any photo, clipart, or drawing. Our vision LLM will convert it into an animated full-body sprite with floating face badge!',
-                              style: TextStyle(fontSize: 11, color: Colors.black87),
+                              style: TextStyle(
+                                  fontSize: 11, color: Colors.black87),
                             ),
                           ],
                         ),
@@ -728,7 +877,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                   children: [
                     const Text(
                       '🐾 Companion Species',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     TextButton(
                       onPressed: () {
@@ -744,7 +894,8 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                   spacing: 8,
                   runSpacing: 8,
                   children: PetCharacter.presetCharacters.map((c) {
-                    final isSel = _petState.species.toLowerCase() == c.species.toLowerCase();
+                    final isSel = _petState.species.toLowerCase() ==
+                        c.species.toLowerCase();
                     return ChoiceChip(
                       avatar: Text(c.emoji),
                       label: Text(c.name),
