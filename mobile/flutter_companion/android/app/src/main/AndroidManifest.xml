@@ -1,5 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Permissions to draw floating pet over other apps (Wispr Flow overlay architecture) -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mochi.companion">
+    <!-- Permissions to draw floating pet over screen and manage foreground service -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />

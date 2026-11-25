@@ -1,9 +1,11 @@
-package com.example.mochi_companion
+package com.mochi.companion
 
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -16,18 +18,19 @@ import kotlin.math.abs
 
 /**
  * OverlayTouchListener:
- * Handles high-precision touch interaction for Mochi's floating bubble.
- * Features:
- * - Micro-tap vs drag detection (< 15px slop).
- * - Fling velocity tracking with inertial slide.
- * - Magnetic edge docking (snaps smoothly to screen edges or bottom corners).
- * - Tactile haptic feedback on pick-up and drop.
+ * Handles high-precision touch interaction for Mochi's floating companion:
+ * - Single Tap: Pet Mochi (+happiness, squashes softly with haptic).
+ * - Double Tap: Feed Strawberry Treat 🍓 (+energy, chew bounce).
+ * - Long Press: Cozy cuddle / sleep toggle.
+ * - Drag & Fling: Inertial slide with tactile pick-up haptic.
+ * - Magnetic Edge Docking: Smooth spring docking to screen margin with position persistence.
  */
 class OverlayTouchListener(
     private val context: Context,
     private val windowManager: WindowManager,
     private val layoutParams: WindowManager.LayoutParams,
-    private val onPetClicked: () -> Unit
+    private val petView: PetOverlayView,
+    private val statsManager: PetStatsManager
 ) : View.OnTouchListener {
 
     private var initialX = 0
@@ -36,6 +39,12 @@ class OverlayTouchListener(
     private var initialTouchY = 0f
     private var isDragging = false
     private var velocityTracker: VelocityTracker? = null
+
+    // Multi-tap & Long-press detection
+    private var lastTapTime = 0L
+    private val handler = Handler(Looper.getMainLooper())
+    private var longPressRunnable: Runnable? = null
+    private var isLongPress = false
 
     private val vibrator: Vibrator? by lazy {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -65,10 +74,22 @@ class OverlayTouchListener(
                 initialTouchX = event.rawX
                 initialTouchY = event.rawY
                 isDragging = false
+                isLongPress = false
 
                 velocityTracker?.recycle()
                 velocityTracker = VelocityTracker.obtain()
                 velocityTracker?.addMovement(event)
+
+                // Schedule long press
+                longPressRunnable = Runnable {
+                    if (!isDragging) {
+                        isLongPress = true
+                        triggerHaptic(40, 160)
+                        petView.triggerSquash()
+                        petView.showSpeech("Cozy cuddle time... 💤")
+                    }
+                }
+                longPressRunnable?.let { handler.postDelayed(it, 650) }
                 return true
             }
 
@@ -79,7 +100,9 @@ class OverlayTouchListener(
 
                 if (!isDragging && (abs(dx) > 15 || abs(dy) > 15)) {
                     isDragging = true
-                    triggerHaptic(durationMs = 20, amplitude = 120) // Pick-up haptic tick
+                    longPressRunnable?.let { handler.removeCallbacks(it) }
+                    triggerHaptic(18, 120) // Pick-up haptic tick
+                    petView.triggerStretch()
                 }
 
                 if (isDragging) {
@@ -93,6 +116,8 @@ class OverlayTouchListener(
             }
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                longPressRunnable?.let { handler.removeCallbacks(it) }
+
                 velocityTracker?.addMovement(event)
                 velocityTracker?.computeCurrentVelocity(1000)
 
@@ -101,12 +126,25 @@ class OverlayTouchListener(
                 velocityTracker?.recycle()
                 velocityTracker = null
 
-                if (!isDragging) {
-                    // Tap event
-                    triggerHaptic(durationMs = 12, amplitude = 80)
-                    onPetClicked()
-                } else {
-                    // Drag ended: apply fling + magnetic edge docking
+                if (!isDragging && !isLongPress) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastTapTime < 340) {
+                        // Double Tap: Feed Strawberry Treat! 🍓
+                        triggerHaptic(25, 140)
+                        petView.triggerChewBounce()
+                        val msg = statsManager.feedTreat()
+                        petView.showSpeech(msg)
+                        lastTapTime = 0
+                    } else {
+                        // Single Tap: Pet Mochi! ✨
+                        lastTapTime = now
+                        triggerHaptic(14, 90)
+                        petView.triggerSquash()
+                        val msg = statsManager.petMochi()
+                        petView.showSpeech(msg)
+                    }
+                } else if (isDragging) {
+                    // Drag ended: apply fling momentum + magnetic edge docking & persist position
                     performMagneticDock(v, vx, vy)
                 }
                 return true
@@ -120,7 +158,7 @@ class OverlayTouchListener(
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
 
-        // Estimate target X with inertia
+        // Estimate target X with fling inertia
         val projectedX = layoutParams.x + (vx * 0.15f).toInt()
         val viewWidth = view.width.coerceAtLeast(180)
 
@@ -131,15 +169,18 @@ class OverlayTouchListener(
             screenWidth - viewWidth - 16 // Snap to Right Margin
         }
 
-        // Clamp target Y within screen bounds
+        // Clamp target Y within safe screen bounds
         val currentY = layoutParams.y
-        val targetY = currentY.coerceIn(100, screenHeight - 350)
+        val targetY = currentY.coerceIn(100, screenHeight - 320)
+
+        // Persist resting coordinates in PetStatsManager
+        statsManager.setPosition(targetX, targetY)
 
         // Animate smooth spring-docking
         val startX = layoutParams.x
         val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 320
-            interpolator = OvershootInterpolator(1.2f)
+            duration = 340
+            interpolator = OvershootInterpolator(1.3f)
             addUpdateListener { anim ->
                 val progress = anim.animatedFraction
                 layoutParams.x = (startX + (targetX - startX) * progress).toInt()
@@ -150,6 +191,6 @@ class OverlayTouchListener(
             }
         }
         animator.start()
-        triggerHaptic(durationMs = 10, amplitude = 60) // Dock click
+        triggerHaptic(12, 70) // Dock click
     }
 }
