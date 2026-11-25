@@ -134,3 +134,14 @@ A living development log of every session, design decision, architectural pivot,
 * **Documentation:** Corrected the Android release APK path and documented the current version code and install command.
 * **Files edited:** `mobile/flutter_companion/pubspec.yaml`, `mobile/flutter_companion/README.md`, `ui/settings_dialog.py`, `build/build.bat`, `README.md`, and `diary.md`.
 * **Verification:** Release APK and separate Windows preview EXE built successfully. Installed the release APK to the connected Android device via ADB. Standard EXE replacement failed with `PermissionError` on `dist/DesktopPet.exe`; the alternate preview EXE is available for review. No automated test suite was run.
+
+---
+
+## Session 11: Windows and Android Distribution Assets (Nov 25, 2026)
+**Focus:** Refresh the checked-in Windows binary, stage the versioned APK, and publish matching release assets.
+
+* **Windows:** Replaced `dist/DesktopPet.exe` with the fresh preview build containing the visible settings-preview label.
+* **Android:** Copied the successfully built version 1.0.1 / version code 2002 APK to `dist/mobile/MochiCompanion.apk` for the release upload.
+* **GitHub release automation:** Extended the tag workflow to set up Java and Flutter, build the release APK, and attach it beside the Windows EXE. Updated the root README badge and release version note.
+* **Files edited:** `.github/workflows/release.yml`, `README.md`, `dist/DesktopPet.exe`, `dist/mobile/MochiCompanion.apk`, and `diary.md`.
+* **Verification:** Both local artifacts were built and the APK was installed on the connected device. The GitHub Release upload remains the final distribution step.

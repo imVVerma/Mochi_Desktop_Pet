@@ -2,7 +2,7 @@
 
 > A delightful, lifelike, cute, and genuinely useful virtual desktop and mobile companion for **Windows** and **Android** (macOS & iOS coming soon!).
 
-[![Release](https://img.shields.io/badge/Release-v1.0.0-FFB6C1?style=for-the-badge&logo=windows)](https://github.com/imVVerma/Mochi_Desktop_Pet/releases/latest)
+[![Release](https://img.shields.io/badge/Release-v1.0.1-FFB6C1?style=for-the-badge&logo=windows)](https://github.com/imVVerma/Mochi_Desktop_Pet/releases/latest)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python)](https://python.org)
 [![Flutter](https://img.shields.io/badge/Flutter-3.50+-02569B?style=for-the-badge&logo=flutter)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/Platforms-Windows%20%7C%20Android-green?style=for-the-badge)](https://github.com/imVVerma/Mochi_Desktop_Pet)
@@ -11,6 +11,8 @@
 ---
 
 ## 📥 Instant Downloads (No Coding or Terminal Required!)
+
+Current release: **v1.0.1**. The Android APK uses version code **2002**, so it updates builds with version code 2001 without uninstalling first.
 
 | Platform | Download | Quick Start |
 | :--- | :--- | :--- |
