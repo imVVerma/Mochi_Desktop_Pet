@@ -104,7 +104,8 @@ class FloatingPetService : Service() {
             context = this,
             petName = statsManager.petName,
             baseColorHex = statsManager.baseColorHex,
-            accessory = statsManager.accessory
+            accessory = statsManager.accessory,
+            species = statsManager.characterType
         )
 
         val touchListener = OverlayTouchListener(
@@ -147,10 +148,13 @@ class FloatingPetService : Service() {
         return START_STICKY
     }
 
-    fun updateAppearance(colorHex: String, accessory: String) {
+    fun updateAppearance(colorHex: String, accessory: String, species: String? = null) {
         if (::petView.isInitialized) {
             petView.setBaseColor(colorHex)
             petView.setAccessory(accessory)
+            if (species != null) {
+                petView.setCharacter(species)
+            }
         }
     }
 

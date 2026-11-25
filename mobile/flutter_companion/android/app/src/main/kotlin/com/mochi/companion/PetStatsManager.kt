@@ -29,6 +29,10 @@ class PetStatsManager(context: Context) {
         get() = prefs.getInt(KEY_FOCUS_MINUTES, 0)
         private set(value) = prefs.edit().putInt(KEY_FOCUS_MINUTES, value).apply()
 
+    var characterType: String
+        get() = prefs.getString(KEY_CHARACTER_TYPE, "bunny") ?: "bunny"
+        set(value) = prefs.edit().putString(KEY_CHARACTER_TYPE, value.lowercase()).apply()
+
     var petName: String
         get() = prefs.getString(KEY_PET_NAME, "Mochi") ?: "Mochi"
         set(value) = prefs.edit().putString(KEY_PET_NAME, value).apply()
@@ -60,10 +64,27 @@ class PetStatsManager(context: Context) {
         }
         updateLastInteractionTime()
 
-        return when {
-            happiness >= 85 -> "Purr... I love you! ✨"
-            happiness >= 50 -> "*happy ear wiggle* 💕"
-            else -> "Thank you for petting me... 🥺"
+        return when (characterType) {
+            "cat" -> when {
+                happiness >= 85 -> "Purr... I love you! ✨"
+                happiness >= 50 -> "Meow! *happy tail swish* 🐱"
+                else -> "Meow... *rubs against hand* 💕"
+            }
+            "dog" -> when {
+                happiness >= 85 -> "Aroo! Best friend forever! ✨"
+                happiness >= 50 -> "Woof! *tail wags excitedly* 🐶"
+                else -> "*happy happy panting* 🐾"
+            }
+            "panda" -> when {
+                happiness >= 85 -> "Chirp! Bao gives big warm hug! ✨"
+                happiness >= 50 -> "*happy roll and tumble* 🐼"
+                else -> "*snuggles closer to you* 💕"
+            }
+            else -> when {
+                happiness >= 85 -> "Purr... I love you! ✨"
+                happiness >= 50 -> "*happy ear wiggle* 💕"
+                else -> "Thank you for petting me... 🥺"
+            }
         }
     }
 
@@ -71,7 +92,12 @@ class PetStatsManager(context: Context) {
         energy = (energy + 20).coerceAtMost(100)
         happiness = (happiness + 10).coerceAtMost(100)
         updateLastInteractionTime()
-        return "Yum! Crunchy strawberry treat! 🍓"
+        return when (characterType) {
+            "cat" -> "Nom nom! Tasty salmon treat! 🐟"
+            "dog" -> "Crunch crunch! Yummy puppy biscuit! 🦴"
+            "panda" -> "Crunchy bamboo shoot snack! 🎋"
+            else -> "Yum! Crunchy strawberry treat! 🍓"
+        }
     }
 
     fun recordFocusSession(minutes: Int): String {
@@ -82,9 +108,22 @@ class PetStatsManager(context: Context) {
         return "Great job focusing for $minutes min! 🎓⭐"
     }
 
-    fun setAppearance(colorHex: String, newAccessory: String) {
+    fun setAppearance(colorHex: String, newAccessory: String, species: String? = null) {
         baseColorHex = colorHex
         accessory = newAccessory
+        if (species != null) {
+            characterType = species
+        }
+    }
+
+    fun setCharacter(species: String, newName: String? = null, colorHex: String? = null) {
+        characterType = species
+        if (newName != null) {
+            petName = newName
+        }
+        if (colorHex != null) {
+            baseColorHex = colorHex
+        }
     }
 
     fun setPosition(x: Int, y: Int) {
@@ -96,6 +135,8 @@ class PetStatsManager(context: Context) {
         applyCircadianDecay()
         return mapOf(
             "name" to petName,
+            "species" to characterType,
+            "characterType" to characterType,
             "happiness" to happiness,
             "energy" to energy,
             "focusMinutes" to focusMinutes,
@@ -129,6 +170,7 @@ class PetStatsManager(context: Context) {
     }
 
     companion object {
+        private const val KEY_CHARACTER_TYPE = "character_type"
         private const val KEY_HAPPINESS = "happiness"
         private const val KEY_ENERGY = "energy"
         private const val KEY_FOCUS_MINUTES = "focus_minutes"

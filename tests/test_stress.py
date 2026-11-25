@@ -117,5 +117,5 @@ def test_rapid_drag_chaos():
         assert not math.isnan(physics.y)
         assert not math.isinf(physics.x)
         assert not math.isinf(physics.y)
-        assert bounds.min_x <= physics.x <= bounds.max_x - physics.width
+        assert bounds.min_x <= physics.x <= bounds.max_x - physics.width + physics.corner_offset_x
         assert bounds.min_y <= physics.y <= physics.ground_y

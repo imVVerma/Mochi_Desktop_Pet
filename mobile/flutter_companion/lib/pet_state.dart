@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
  */
 class PetState {
   String name = 'Mochi';
+  String species = 'bunny';
   Color primaryColor = const Color(0xFFFFF8E7); // Vanilla Cream
   String accessory = '🐾 Natural';
   int happiness = 92;
@@ -15,6 +16,8 @@ class PetState {
 
   void updateFromMap(Map<dynamic, dynamic> map) {
     if (map.containsKey('name')) name = map['name'] as String;
+    if (map.containsKey('species')) species = map['species'] as String;
+    if (map.containsKey('characterType')) species = map['characterType'] as String;
     if (map.containsKey('happiness')) happiness = (map['happiness'] as num).toInt();
     if (map.containsKey('energy')) energy = (map['energy'] as num).toInt();
     if (map.containsKey('focusMinutes')) focusMinutes = (map['focusMinutes'] as num).toInt();

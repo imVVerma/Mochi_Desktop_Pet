@@ -1,7 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'bunny_painter.dart';
+import 'character_models.dart';
+import 'pet_painter.dart';
 import 'pet_state.dart';
 
 void main() {
@@ -284,16 +285,26 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                               color: Color(0xFF2C3E50),
                             ),
                           ),
-                          const Text(
-                            'Your Floating Pocket Companion',
-                            style: TextStyle(color: Colors.black54, fontSize: 13),
+                          Text(
+                            '${PetCharacter.findBySpecies(_petState.species).emoji} Floating Pocket Companion',
+                            style: const TextStyle(color: Colors.black54, fontSize: 13),
                           ),
                         ],
                       ),
-                      IconButton.filledTonal(
-                        onPressed: _showWardrobeSheet,
-                        icon: const Icon(Icons.palette_outlined),
-                        tooltip: 'Wardrobe & Fur Color',
+                      Row(
+                        children: [
+                          IconButton.filledTonal(
+                            onPressed: _showCharacterSelectorSheet,
+                            icon: const Text('🐾', style: TextStyle(fontSize: 16)),
+                            tooltip: 'Choose Pet Companion',
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            onPressed: _showWardrobeSheet,
+                            icon: const Icon(Icons.palette_outlined),
+                            tooltip: 'Wardrobe & Fur Color',
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -393,8 +404,9 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                     animation: _animController,
                     builder: (context, child) {
                       return CustomPaint(
-                        size: const Size(140, 140),
-                        painter: BunnyPainter(
+                        size: const Size(150, 150),
+                        painter: PetPainter(
+                          species: _petState.species,
                           phase: _animController.value,
                           isDragging: _isDragging,
                           bodyColor: _petState.primaryColor,
@@ -513,6 +525,190 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
     );
   }
 
+  Future<void> _switchCharacter(PetCharacter char) async {
+    setState(() {
+      _petState.species = char.species;
+      _petState.name = char.name;
+      _petState.primaryColor = char.defaultColor;
+    });
+
+    try {
+      final colorHex = PetState.colorToHex(char.defaultColor);
+      final dynamic updated = await _overlayChannel.invokeMethod('setCharacter', {
+        'species': char.species,
+        'name': char.name,
+        'baseColor': colorHex,
+        'accessory': _petState.accessory,
+      });
+      if (updated is Map && mounted) {
+        setState(() => _petState.updateFromMap(updated));
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🐾 Switched companion to ${char.name} ${char.emoji}! Full body in app, face badge in overlay.'),
+          backgroundColor: const Color(0xFF6C5CE7),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _showCharacterSelectorSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '🐾 Choose Companion',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6C5CE7).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'App: Full Body • Overlay: Face',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF6C5CE7),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Choose your pet companion. The app displays their full animated body; the floating screen overlay shows a compact, unobtrusive face badge.',
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                const SizedBox(height: 16),
+                ...PetCharacter.presetCharacters.map((char) {
+                  final isSelected = _petState.species.toLowerCase() == char.species.toLowerCase();
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF6C5CE7).withValues(alpha: 0.08)
+                          : Colors.white,
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFF6C5CE7)
+                            : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: char.defaultColor,
+                        child: Text(char.emoji, style: const TextStyle(fontSize: 20)),
+                      ),
+                      title: Row(
+                        children: [
+                          Text(
+                            '${char.name} (${char.species})',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          if (isSelected) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6C5CE7),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'Active',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      subtitle: Text(
+                        char.description,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onTap: () {
+                        _switchCharacter(char);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                }),
+                const SizedBox(height: 12),
+                // AI Character Forge Extensibility Card
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF6C5CE7).withValues(alpha: 0.10),
+                        const Color(0xFFFF9AA2).withValues(alpha: 0.10),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF6C5CE7).withValues(alpha: 0.2)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Text('✨', style: TextStyle(fontSize: 24)),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'AI Character Forge (Next Phase)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2C3E50),
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Upload any photo, clipart, or drawing. Our vision LLM will convert it into an animated full-body sprite with floating face badge!',
+                              style: TextStyle(fontSize: 11, color: Colors.black87),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showWardrobeSheet() {
     showModalBottomSheet(
       context: context,
@@ -527,6 +723,40 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '🐾 Companion Species',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showCharacterSelectorSheet();
+                      },
+                      child: const Text('View All'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: PetCharacter.presetCharacters.map((c) {
+                    final isSel = _petState.species.toLowerCase() == c.species.toLowerCase();
+                    return ChoiceChip(
+                      avatar: Text(c.emoji),
+                      label: Text(c.name),
+                      selected: isSel,
+                      onSelected: (_) {
+                        _switchCharacter(c);
+                        Navigator.pop(context);
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
                 const Text(
                   '🎨 Fur Color & Palettes',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -539,6 +769,7 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                     _colorPill('Vanilla Cream', const Color(0xFFFFF8E7)),
                     _colorPill('Strawberry Milk', const Color(0xFFFFD1DC)),
                     _colorPill('Cloud White', const Color(0xFFFFFFFF)),
+                    _colorPill('Golden Fur', const Color(0xFFF6B93B)),
                     _colorPill('Matcha Cream', const Color(0xFFE8F5E9)),
                     _colorPill('Lilac Mist', const Color(0xFFEDE7F6)),
                   ],

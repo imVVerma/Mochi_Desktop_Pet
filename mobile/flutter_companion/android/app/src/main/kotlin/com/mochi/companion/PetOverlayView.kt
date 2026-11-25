@@ -30,7 +30,8 @@ class PetOverlayView(
     context: Context,
     private val petName: String = "Mochi",
     private var baseColorHex: String = "#FFF8E7",
-    private var accessory: String = "🐾 Natural"
+    private var accessory: String = "🐾 Natural",
+    private var species: String = "bunny"
 ) : View(context) {
 
     private val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -40,6 +41,29 @@ class PetOverlayView(
 
     private val innerEarPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor("#FFD1DC") // Pastel Pink
+        style = Paint.Style.FILL
+    }
+
+    private val whiskerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#5A5A5A")
+        strokeWidth = 2.2f
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+    }
+
+    private val tonguePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#FF6B81")
+        style = Paint.Style.FILL
+    }
+
+    private val darkPatchPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#2D3436")
+        style = Paint.Style.FILL
+    }
+
+    private val eyebrowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        alpha = 230
         style = Paint.Style.FILL
     }
 
@@ -189,6 +213,11 @@ class PetOverlayView(
         invalidate()
     }
 
+    fun setCharacter(newSpecies: String) {
+        species = newSpecies.lowercase()
+        invalidate()
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
@@ -261,16 +290,46 @@ class PetOverlayView(
         canvas.save()
         canvas.scale(scaleXFactor, scaleYFactor, cx, cy + 40f)
 
-        // Draw Droopy Ears (behind head)
-        drawFloppyEars(canvas, cx, cy)
+        // Draw Ears (behind head)
+        drawCharacterEars(canvas, cx, cy)
 
-        // Draw Chubby Body & Head
+        // Draw Chubby Head (Face-Only Badge)
         val headRadius = 45f + breathOffset * 0.4f
         canvas.drawCircle(cx, cy, headRadius, bodyPaint)
+
+        // Character-specific markings before eyes
+        if (species == "panda") {
+            // Panda Eye Patches (tilted black ovals)
+            canvas.save()
+            canvas.rotate(-16f, cx - 16f, cy - 4f)
+            canvas.drawOval(RectF(cx - 25f, cy - 13f, cx - 7f, cy + 5f), darkPatchPaint)
+            canvas.restore()
+
+            canvas.save()
+            canvas.rotate(16f, cx + 16f, cy - 4f)
+            canvas.drawOval(RectF(cx + 7f, cy - 13f, cx + 25f, cy + 5f), darkPatchPaint)
+            canvas.restore()
+        } else if (species == "dog") {
+            // Shiba Eyebrow Markings
+            canvas.drawCircle(cx - 16f, cy - 16f, 4.5f, eyebrowPaint)
+            canvas.drawCircle(cx + 16f, cy - 16f, 4.5f, eyebrowPaint)
+        }
 
         // Draw Blushing Cheeks
         canvas.drawCircle(cx - 26f, cy + 10f, 9f, blushPaint)
         canvas.drawCircle(cx + 26f, cy + 10f, 9f, blushPaint)
+
+        // Cat Whiskers
+        if (species == "cat") {
+            // Left whiskers
+            canvas.drawLine(cx - 24f, cy + 4f, cx - 42f, cy + 2f, whiskerPaint)
+            canvas.drawLine(cx - 24f, cy + 9f, cx - 44f, cy + 9f, whiskerPaint)
+            canvas.drawLine(cx - 24f, cy + 14f, cx - 42f, cy + 16f, whiskerPaint)
+            // Right whiskers
+            canvas.drawLine(cx + 24f, cy + 4f, cx + 42f, cy + 2f, whiskerPaint)
+            canvas.drawLine(cx + 24f, cy + 9f, cx + 44f, cy + 9f, whiskerPaint)
+            canvas.drawLine(cx + 24f, cy + 14f, cx + 42f, cy + 16f, whiskerPaint)
+        }
 
         // Check Night Time (Sleepy Eyes)
         val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
@@ -302,24 +361,162 @@ class PetOverlayView(
             canvas.drawCircle(cx + 14.5f, cy - 2f, 1.2f, eyeSparklePaint)
         }
 
-        // Tiny cute pink nose
-        val nosePaint = Paint(eyePaint).apply { color = Color.parseColor("#E57373") }
-        canvas.drawCircle(cx, cy + 5f, 2.5f, nosePaint)
-
-        // Classic bunny split-lip smile
-        val mouthPaint = Paint(eyePaint).apply {
-            strokeWidth = 2f
-            style = Paint.Style.STROKE
-            color = Color.parseColor("#7A5050")
-        }
-        canvas.drawLine(cx, cy + 5f, cx, cy + 8.5f, mouthPaint)
-        canvas.drawArc(RectF(cx - 7f, cy + 6f, cx, cy + 12f), 20f, 140f, false, mouthPaint)
-        canvas.drawArc(RectF(cx, cy + 6f, cx + 7f, cy + 12f), 20f, 140f, false, mouthPaint)
+        // Character-specific Nose & Mouth
+        drawCharacterMouth(canvas, cx, cy)
 
         // Draw Accessory Outfits
         drawAccessory(canvas, cx, cy)
 
         canvas.restore()
+    }
+
+    private fun drawCharacterEars(canvas: Canvas, cx: Float, cy: Float) {
+        when (species) {
+            "cat" -> drawCatEars(canvas, cx, cy)
+            "dog" -> drawDogEars(canvas, cx, cy)
+            "panda" -> drawPandaEars(canvas, cx, cy)
+            else -> drawFloppyEars(canvas, cx, cy)
+        }
+    }
+
+    private fun drawCatEars(canvas: Canvas, cx: Float, cy: Float) {
+        // Left Cat Ear
+        canvas.save()
+        canvas.rotate(earWiggle * 0.5f, cx - 26f, cy - 30f)
+        val leftPath = Path().apply {
+            moveTo(cx - 40f, cy - 14f)
+            lineTo(cx - 30f, cy - 54f)
+            lineTo(cx - 10f, cy - 34f)
+            close()
+        }
+        canvas.drawPath(leftPath, bodyPaint)
+        val leftInner = Path().apply {
+            moveTo(cx - 36f, cy - 18f)
+            lineTo(cx - 29f, cy - 48f)
+            lineTo(cx - 14f, cy - 32f)
+            close()
+        }
+        canvas.drawPath(leftInner, innerEarPaint)
+        canvas.restore()
+
+        // Right Cat Ear
+        canvas.save()
+        canvas.rotate(-earWiggle * 0.5f, cx + 26f, cy - 30f)
+        val rightPath = Path().apply {
+            moveTo(cx + 40f, cy - 14f)
+            lineTo(cx + 30f, cy - 54f)
+            lineTo(cx + 10f, cy - 34f)
+            close()
+        }
+        canvas.drawPath(rightPath, bodyPaint)
+        val rightInner = Path().apply {
+            moveTo(cx + 36f, cy - 18f)
+            lineTo(cx + 29f, cy - 48f)
+            lineTo(cx + 14f, cy - 32f)
+            close()
+        }
+        canvas.drawPath(rightInner, innerEarPaint)
+        canvas.restore()
+    }
+
+    private fun drawDogEars(canvas: Canvas, cx: Float, cy: Float) {
+        // Left Dog Ear
+        canvas.save()
+        canvas.translate(cx - 28f, cy - 32f)
+        canvas.rotate(-15f + earWiggle)
+        val leftEar = Path().apply {
+            moveTo(-14f, 0f)
+            lineTo(-2f, -34f)
+            lineTo(14f, -4f)
+            close()
+        }
+        canvas.drawPath(leftEar, bodyPaint)
+        val leftInner = Path().apply {
+            moveTo(-10f, -2f)
+            lineTo(-2f, -28f)
+            lineTo(10f, -6f)
+            close()
+        }
+        canvas.drawPath(leftInner, innerEarPaint)
+        canvas.restore()
+
+        // Right Dog Ear
+        canvas.save()
+        canvas.translate(cx + 28f, cy - 32f)
+        canvas.rotate(15f - earWiggle)
+        val rightEar = Path().apply {
+            moveTo(14f, 0f)
+            lineTo(2f, -34f)
+            lineTo(-14f, -4f)
+            close()
+        }
+        canvas.drawPath(rightEar, bodyPaint)
+        val rightInner = Path().apply {
+            moveTo(10f, -2f)
+            lineTo(2f, -28f)
+            lineTo(-10f, -6f)
+            close()
+        }
+        canvas.drawPath(rightInner, innerEarPaint)
+        canvas.restore()
+    }
+
+    private fun drawPandaEars(canvas: Canvas, cx: Float, cy: Float) {
+        // Round Black Bear Ears
+        canvas.drawCircle(cx - 32f, cy - 36f, 16f, darkPatchPaint)
+        canvas.drawCircle(cx + 32f, cy - 36f, 16f, darkPatchPaint)
+    }
+
+    private fun drawCharacterMouth(canvas: Canvas, cx: Float, cy: Float) {
+        val mouthPaint = Paint(eyePaint).apply {
+            strokeWidth = 2f
+            style = Paint.Style.STROKE
+            color = Color.parseColor("#7A5050")
+        }
+
+        when (species) {
+            "cat" -> {
+                // Pink triangle nose
+                val nosePaint = Paint(eyePaint).apply { color = Color.parseColor("#FF8B94") }
+                val nosePath = Path().apply {
+                    moveTo(cx - 3.5f, cy + 4f)
+                    lineTo(cx + 3.5f, cy + 4f)
+                    lineTo(cx, cy + 7.5f)
+                    close()
+                }
+                canvas.drawPath(nosePath, nosePaint)
+                // Cat :3 smile
+                canvas.drawArc(RectF(cx - 7f, cy + 6f, cx, cy + 12f), 20f, 140f, false, mouthPaint)
+                canvas.drawArc(RectF(cx, cy + 6f, cx + 7f, cy + 12f), 20f, 140f, false, mouthPaint)
+            }
+            "dog" -> {
+                // Black dog snout
+                val dogNosePaint = Paint(eyePaint).apply { color = Color.parseColor("#222222") }
+                canvas.drawOval(RectF(cx - 4.5f, cy + 3f, cx + 4.5f, cy + 8f), dogNosePaint)
+                // Open smile line
+                canvas.drawLine(cx, cy + 8f, cx, cy + 11f, mouthPaint)
+                canvas.drawArc(RectF(cx - 8f, cy + 8f, cx + 8f, cy + 16f), 10f, 160f, false, mouthPaint)
+                // Cute pink tongue blep!
+                val tongueRect = RectF(cx - 4f, cy + 12f, cx + 4f, cy + 19f)
+                canvas.drawRoundRect(tongueRect, 4f, 4f, tonguePaint)
+            }
+            "panda" -> {
+                // Bear nose
+                val pandaNosePaint = Paint(eyePaint).apply { color = Color.parseColor("#2D3436") }
+                canvas.drawOval(RectF(cx - 5f, cy + 4f, cx + 5f, cy + 9f), pandaNosePaint)
+                canvas.drawLine(cx, cy + 9f, cx, cy + 12f, mouthPaint)
+                canvas.drawArc(RectF(cx - 7f, cy + 9f, cx, cy + 15f), 20f, 140f, false, mouthPaint)
+                canvas.drawArc(RectF(cx, cy + 9f, cx + 7f, cy + 15f), 20f, 140f, false, mouthPaint)
+            }
+            else -> {
+                // Classic Bunny Nose & Mouth
+                val nosePaint = Paint(eyePaint).apply { color = Color.parseColor("#E57373") }
+                canvas.drawCircle(cx, cy + 5f, 2.5f, nosePaint)
+                canvas.drawLine(cx, cy + 5f, cx, cy + 8.5f, mouthPaint)
+                canvas.drawArc(RectF(cx - 7f, cy + 6f, cx, cy + 12f), 20f, 140f, false, mouthPaint)
+                canvas.drawArc(RectF(cx, cy + 6f, cx + 7f, cy + 12f), 20f, 140f, false, mouthPaint)
+            }
+        }
     }
 
     private fun drawFloppyEars(canvas: Canvas, cx: Float, cy: Float) {

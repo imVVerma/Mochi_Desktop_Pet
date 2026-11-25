@@ -115,8 +115,19 @@ class MainActivity : FlutterActivity() {
                 "setAppearance" -> {
                     val colorHex = call.argument<String>("baseColor") ?: statsManager.baseColorHex
                     val accessory = call.argument<String>("accessory") ?: statsManager.accessory
-                    statsManager.setAppearance(colorHex, accessory)
-                    FloatingPetService.instance?.updateAppearance(colorHex, accessory)
+                    val species = call.argument<String>("species") ?: call.argument<String>("characterType")
+                    statsManager.setAppearance(colorHex, accessory, species)
+                    FloatingPetService.instance?.updateAppearance(colorHex, accessory, species)
+                    result.success(statsManager.toMap())
+                }
+
+                "setCharacter" -> {
+                    val species = call.argument<String>("species") ?: call.argument<String>("character") ?: "bunny"
+                    val name = call.argument<String>("name")
+                    val colorHex = call.argument<String>("baseColor")
+                    val accessory = call.argument<String>("accessory") ?: statsManager.accessory
+                    statsManager.setCharacter(species, name, colorHex)
+                    FloatingPetService.instance?.updateAppearance(statsManager.baseColorHex, accessory, species)
                     result.success(statsManager.toMap())
                 }
 
