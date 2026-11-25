@@ -143,5 +143,6 @@ A living development log of every session, design decision, architectural pivot,
 * **Windows:** Replaced `dist/DesktopPet.exe` with the fresh preview build containing the visible settings-preview label.
 * **Android:** Copied the successfully built version 1.0.1 / version code 2002 APK to `dist/mobile/MochiCompanion.apk` for the release upload.
 * **GitHub release automation:** Extended the tag workflow to set up Java and Flutter, build the release APK, and attach it beside the Windows EXE. Updated the root README badge and release version note.
+* **Release check follow-up:** The first GitHub run failed because the hosted Windows runner reported a 360px taskbar height from mismatched DPI coordinate spaces. Capped the PAL estimate at 120px so an implausible work-area difference cannot move the pet too far from the desktop edge.
 * **Files edited:** `.github/workflows/release.yml`, `README.md`, `dist/DesktopPet.exe`, `dist/mobile/MochiCompanion.apk`, and `diary.md`.
-* **Verification:** Both local artifacts were built and the APK was installed on the connected device. The GitHub Release upload remains the final distribution step.
+* **Verification:** Both local artifacts were built and the APK was installed on the connected device. GitHub Actions reported 28 passing and 1 failing test before the taskbar-height fix; the corrected release run is pending.

@@ -109,7 +109,9 @@ class DisplayMetrics:
                 if ctypes.windll.user32.SystemParametersInfoW(48, 0, ctypes.byref(rect), 0):
                     work_bottom = int(rect.bottom)
                     if screen_h > work_bottom > 0:
-                        return screen_h - work_bottom
+                        # Work-area and screen metrics can use different DPI-scaled
+                        # coordinate spaces. Keep taskbar estimates within a plausible range.
+                        return max(20, min(screen_h - work_bottom, 120))
             except Exception:
                 pass
             return 45
