@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Main Center Pad -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,11.5 C9.2,11.5 6.8,13.5 6.8,16.5 C6.8,19 8.8,21 12,21 C15.2,21 17.2,19 17.2,16.5 C17.2,13.5 14.8,11.5 12,11.5 Z" />
+    <!-- Toe 1 (Leftmost) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M5,10.5 A2,2.8 0 1,0 9,10.5 A2,2.8 0 1,0 5,10.5 Z" />
+    <!-- Toe 2 (Center Left) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M9,6.5 A2,3 0 1,0 13,6.5 A2,3 0 1,0 9,6.5 Z" />
+    <!-- Toe 3 (Center Right) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M13,6.5 A2,3 0 1,0 17,6.5 A2,3 0 1,0 13,6.5 Z" />
+    <!-- Toe 4 (Rightmost) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17,10.5 A2,2.8 0 1,0 21,10.5 A2,2.8 0 1,0 17,10.5 Z" />
+</vector>

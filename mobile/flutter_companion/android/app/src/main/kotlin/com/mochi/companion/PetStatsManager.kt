@@ -132,7 +132,6 @@ class PetStatsManager(context: Context) {
     }
 
     fun toMap(): Map<String, Any> {
-        applyCircadianDecay()
         return mapOf(
             "name" to petName,
             "species" to characterType,
@@ -147,21 +146,20 @@ class PetStatsManager(context: Context) {
         )
     }
 
-    private fun applyCircadianDecay() {
+    fun applyCircadianDecay() {
         val lastTime = prefs.getLong(KEY_LAST_TIMESTAMP, System.currentTimeMillis())
         val now = System.currentTimeMillis()
         val elapsedMs = (now - lastTime).coerceAtLeast(0)
-        // Convert to fractional hours
         val elapsedHours = elapsedMs.toDouble() / (1000.0 * 60.0 * 60.0)
 
-        // Apply smooth decay if at least 15 minutes have passed
-        if (elapsedHours >= 0.25) {
-            val decay = (elapsedHours * 3.0).toInt()
-            if (decay > 0) {
-                happiness = (happiness - decay).coerceAtLeast(20)
-                energy = (energy - decay).coerceAtLeast(20)
-                updateLastInteractionTime()
-            }
+        // Decay 3 points per hour (1 point every 20 minutes)
+        val decayPoints = (elapsedHours * 3.0).toInt()
+        if (decayPoints > 0) {
+            happiness = (happiness - decayPoints).coerceAtLeast(20)
+            energy = (energy - decayPoints).coerceAtLeast(20)
+            // Advance timestamp ONLY by the exact time consumed, preserving fractional remainder
+            val msConsumed = (decayPoints.toDouble() / 3.0 * 3600000.0).toLong()
+            prefs.edit().putLong(KEY_LAST_TIMESTAMP, lastTime + msConsumed).apply()
         }
     }
 

@@ -105,7 +105,9 @@ class FloatingPetService : Service() {
             petName = statsManager.petName,
             baseColorHex = statsManager.baseColorHex,
             accessory = statsManager.accessory,
-            species = statsManager.characterType
+            species = statsManager.characterType,
+            initialHappiness = statsManager.happiness,
+            initialEnergy = statsManager.energy
         )
 
         val touchListener = OverlayTouchListener(
@@ -148,6 +150,12 @@ class FloatingPetService : Service() {
         return START_STICKY
     }
 
+    fun syncStats() {
+        if (::petView.isInitialized) {
+            petView.updateStats(statsManager.happiness, statsManager.energy)
+        }
+    }
+
     fun updateAppearance(colorHex: String, accessory: String, species: String? = null) {
         if (::petView.isInitialized) {
             petView.setBaseColor(colorHex)
@@ -155,11 +163,13 @@ class FloatingPetService : Service() {
             if (species != null) {
                 petView.setCharacter(species)
             }
+            syncStats()
         }
     }
 
     fun triggerPetReaction(message: String) {
         if (::petView.isInitialized) {
+            syncStats()
             petView.triggerSquash()
             petView.showSpeech(message)
         }
@@ -167,6 +177,7 @@ class FloatingPetService : Service() {
 
     fun triggerTreatReaction(message: String) {
         if (::petView.isInitialized) {
+            syncStats()
             petView.triggerChewBounce()
             petView.showSpeech(message)
         }
@@ -211,9 +222,9 @@ class FloatingPetService : Service() {
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Mochi is with you 🐾")
             .setContentText("Tap to open companion • Drag or double-tap to feed 🍓")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification_paw)
             .setContentIntent(pendingOpenIntent)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "🔕 Tuck Mochi In", pendingStopIntent)
+            .addAction(R.drawable.ic_notification_sleep, "🔕 Tuck Mochi In", pendingStopIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .build()

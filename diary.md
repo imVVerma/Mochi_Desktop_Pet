@@ -146,3 +146,56 @@ A living development log of every session, design decision, architectural pivot,
 * **Release check follow-up:** The first GitHub run failed because the hosted Windows runner reported a 360px taskbar height from mismatched DPI coordinate spaces. Capped the PAL estimate at 120px so an implausible work-area difference cannot move the pet too far from the desktop edge.
 * **Files edited:** `.github/workflows/release.yml`, `README.md`, `dist/DesktopPet.exe`, `dist/mobile/MochiCompanion.apk`, and `diary.md`.
 * **Verification:** The APK was installed on the connected device. The first GitHub Actions run had 28 passing and 1 failing test; after the taskbar-height bound fix, all 29 tests passed. The v1.0.1 release published `DesktopPet.exe`, `MochiCompanion.apk`, and `config.json` successfully.
+
+---
+
+## Session 12: APK Technical Audit Remediation & Release Productionizing (Nov 25, 2026)
+**Focus:** Address all findings from the comprehensive APK technical audit (lines 155+), covering circadian decay correctness, adaptive launcher icons, mood-reactive overlay visuals, monochrome notifications, release keystore signing, and ABI-split lean distribution.
+
+* **Decay Math & State Mutation (P0):**
+  * Removed side-effecting `applyCircadianDecay()` call from `PetStatsManager.toMap()`, ensuring read operations are pure.
+  * Replaced total timestamp reset in decay logic with exact elapsed-time tracking (`val msConsumed = (decayPoints.toDouble() / 3.0 * 3600000.0).toLong()`), preserving sub-20-minute fractional decay intervals across repeated polls.
+  * Updated `MainActivity.kt` to explicitly apply circadian decay when Flutter queries `getPetStats`.
+* **Adaptive Launcher Icon (P0):**
+  * Implemented official Android adaptive icon structure (`res/mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml`) with separated background (`#FFF8E7`) and foreground vector (`ic_launcher_foreground.xml`).
+  * Mochi's facial features and ears are positioned strictly within the 66dp safe zone (72dp inner boundary of the 108dp canvas), eliminating squircle/circle double-masking artifacts on modern Android launchers (API 26+).
+* **Overlay Mood Visuals (P1):**
+  * Enhanced `PetOverlayView.kt` with dynamic mood-reactive rendering responding to `happiness` and `energy`:
+    * Breathing cycle dynamically scales between 1900ms (high energy/happy) and 3400ms (tired/sleepy).
+    * Low energy (<30) adds sleepy eye arcs and ear droop; low happiness (<40) adds a subtle sweat/worry droplet and reduces blush opacity.
+  * Synchronized mood state across care actions (petting, feeding, playing) and initial launch in `FloatingPetService.kt`.
+* **Monochrome Notification Drawables (P1):**
+  * Replaced Android stock system icons (`android.R.drawable.ic_dialog_info` and `android.R.drawable.ic_menu_close_clear_cancel`) with custom vector drawables `ic_notification_paw.xml` and `ic_notification_sleep.xml`.
+  * Complies with Android status bar monochrome icon styling guidelines.
+* **Release Keystore & Build Architecture (P2):**
+  * Generated dedicated release keystore `mobile/flutter_companion/android/app/mochi-release.jks` with SHA-256 fingerprinting.
+  * Configured `build.gradle.kts` with official `signingConfigs.release` reading environment variables or keystore file with graceful debug fallback.
+  * Bumped Flutter project version to `1.0.2+2003`.
+  * Updated `.github/workflows/release.yml` to build `--split-per-abi` release APKs (~17 MB per ABI vs 45 MB fat universal APK).
+* **UI/UX Roadmap Preview & Documentation (P2):**
+  * Updated `mobile/flutter_companion/lib/main.dart` to clarify the Character Forge feature card as a "✨ Roadmap Preview: AI Character Forge" with transparent notes on the planned secure proxy architecture.
+  * Fixed typo in `UI_UX_PLAN.md` (removed stray `"some "`).
+* **Files edited:**
+  * `mobile/flutter_companion/android/app/src/main/kotlin/com/mochi/companion/PetStatsManager.kt`
+  * `mobile/flutter_companion/android/app/src/main/kotlin/com/mochi/companion/MainActivity.kt`
+  * `mobile/flutter_companion/android/app/src/main/kotlin/com/mochi/companion/PetOverlayView.kt`
+  * `mobile/flutter_companion/android/app/src/main/kotlin/com/mochi/companion/FloatingPetService.kt`
+  * `mobile/flutter_companion/android/app/src/main/res/values/colors.xml`
+  * `mobile/flutter_companion/android/app/src/main/res/drawable/ic_launcher_foreground.xml`
+  * `mobile/flutter_companion/android/app/src/main/res/drawable/ic_notification_paw.xml`
+  * `mobile/flutter_companion/android/app/src/main/res/drawable/ic_notification_sleep.xml`
+  * `mobile/flutter_companion/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`
+  * `mobile/flutter_companion/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml`
+  * `mobile/flutter_companion/android/app/src/main/AndroidManifest.xml`
+  * `mobile/flutter_companion/android/app/build.gradle.kts`
+  * `mobile/flutter_companion/pubspec.yaml`
+  * `mobile/flutter_companion/lib/main.dart`
+  * `.github/workflows/release.yml`
+  * `UI_UX_PLAN.md`
+  * `.gitignore`
+  * `diary.md`
+* **Verification:**
+  * Flutter unit tests passed (3/3).
+  * Python test suite passed (29/29).
+  * Built release APK with `--split-per-abi` (`app-arm64-v8a-release.apk` - 17.0 MB) signed with official keystore.
+  * Staged artifact to `dist/mobile/MochiCompanion.apk`.

@@ -31,8 +31,24 @@ class PetOverlayView(
     private val petName: String = "Mochi",
     private var baseColorHex: String = "#FFF8E7",
     private var accessory: String = "🐾 Natural",
-    private var species: String = "bunny"
+    private var species: String = "bunny",
+    initialHappiness: Int = 92,
+    initialEnergy: Int = 95
 ) : View(context) {
+
+    var happiness: Int = initialHappiness
+        set(value) {
+            field = value.coerceIn(0, 100)
+            applyMoodParameters()
+            invalidate()
+        }
+
+    var energy: Int = initialEnergy
+        set(value) {
+            field = value.coerceIn(0, 100)
+            applyMoodParameters()
+            invalidate()
+        }
 
     private val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor(baseColorHex)
@@ -126,8 +142,34 @@ class PetOverlayView(
 
     private var blinkRunnable: Runnable? = null
 
+    fun updateStats(newHappiness: Int, newEnergy: Int) {
+        happiness = newHappiness
+        energy = newEnergy
+    }
+
+    private fun applyMoodParameters() {
+        val targetDuration = when {
+            energy < 35 -> 3400L // Tired / sluggish breathing
+            energy < 60 -> 2700L
+            happiness >= 80 && energy >= 70 -> 1900L // Lively & cheerful
+            else -> 2400L
+        }
+        if (breathAnimator.duration != targetDuration) {
+            breathAnimator.duration = targetDuration
+        }
+
+        // Adjust blush vibrancy by happiness level
+        val blushAlpha = when {
+            happiness < 35 -> 55 // Faint blush
+            happiness < 60 -> 110
+            else -> 175 // Rosy happy cheeks
+        }
+        blushPaint.alpha = blushAlpha
+    }
+
     init {
         setLayerType(LAYER_TYPE_HARDWARE, null)
+        applyMoodParameters()
         breathAnimator.start()
 
         // Natural random eye blinks
@@ -331,11 +373,12 @@ class PetOverlayView(
             canvas.drawLine(cx + 24f, cy + 14f, cx + 42f, cy + 16f, whiskerPaint)
         }
 
-        // Check Night Time (Sleepy Eyes)
+        // Check Night Time or Low Energy (Sleepy Eyes)
         val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         val isNightTime = currentHour >= 22 || currentHour < 7
+        val isLowEnergy = energy < 35
 
-        if (isNightTime) {
+        if (isNightTime || isLowEnergy) {
             // Sleepy curved resting eyelids
             val sleepEyePaint = Paint(eyePaint).apply {
                 strokeWidth = 3.5f
@@ -359,6 +402,19 @@ class PetOverlayView(
             canvas.drawCircle(cx + 16f, cy - 4f, 5.5f, eyePaint)
             canvas.drawCircle(cx + 17.5f, cy - 6f, 2f, eyeSparklePaint)
             canvas.drawCircle(cx + 14.5f, cy - 2f, 1.2f, eyeSparklePaint)
+        }
+
+        // Low Happiness Emotion Accent (Tiny worry droplet)
+        if (happiness < 35) {
+            val tearPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#74B9FF") }
+            val dropPath = Path().apply {
+                moveTo(cx + 32f, cy - 14f)
+                lineTo(cx + 35f, cy - 7f)
+                lineTo(cx + 29f, cy - 7f)
+                close()
+            }
+            canvas.drawPath(dropPath, tearPaint)
+            canvas.drawCircle(cx + 32f, cy - 6f, 3.2f, tearPaint)
         }
 
         // Character-specific Nose & Mouth
@@ -523,20 +579,26 @@ class PetOverlayView(
         val earLength = 52f
         val earWidth = 24f
 
-        // Left ear (drooping left with subtle momentum wiggle)
+        val moodDroop = when {
+            happiness < 35 -> 10f // Extra droopy when sad
+            happiness >= 80 -> -6f // Perky lifted ears
+            else -> 0f
+        }
+
+        // Left ear (drooping left with subtle momentum wiggle and mood droop)
         canvas.save()
         canvas.translate(cx - 28f, cy - 26f)
-        canvas.rotate(-25f + earWiggle)
+        canvas.rotate(-25f - moodDroop + earWiggle)
         val leftEar = RectF(-earWidth / 2, 0f, earWidth / 2, earLength)
         canvas.drawRoundRect(leftEar, 12f, 12f, bodyPaint)
         val leftInner = RectF(-earWidth / 3, 6f, earWidth / 3, earLength - 8f)
         canvas.drawRoundRect(leftInner, 8f, 8f, innerEarPaint)
         canvas.restore()
 
-        // Right ear (drooping right with subtle momentum wiggle)
+        // Right ear (drooping right with subtle momentum wiggle and mood droop)
         canvas.save()
         canvas.translate(cx + 28f, cy - 26f)
-        canvas.rotate(25f - earWiggle)
+        canvas.rotate(25f + moodDroop - earWiggle)
         val rightEar = RectF(-earWidth / 2, 0f, earWidth / 2, earLength)
         canvas.drawRoundRect(rightEar, 12f, 12f, bodyPaint)
         val rightInner = RectF(-earWidth / 3, 6f, earWidth / 3, earLength - 8f)

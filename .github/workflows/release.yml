@@ -64,12 +64,13 @@ jobs:
         working-directory: mobile/flutter_companion
         run: |
           flutter pub get
-          flutter build apk --release
+          flutter build apk --release --split-per-abi
 
       - name: Stage Android Release Asset
         run: |
           New-Item -ItemType Directory -Force -Path dist/mobile | Out-Null
-          Copy-Item mobile/flutter_companion/build/app/outputs/flutter-apk/app-release.apk dist/mobile/MochiCompanion.apk
+          Copy-Item mobile/flutter_companion/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/mobile/MochiCompanion.apk
+          Copy-Item mobile/flutter_companion/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/mobile/MochiCompanion-arm64-v8a.apk
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

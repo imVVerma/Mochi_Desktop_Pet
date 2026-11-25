@@ -82,6 +82,7 @@ class MainActivity : FlutterActivity() {
                 }
 
                 "getPetStats" -> {
+                    statsManager.applyCircadianDecay()
                     result.success(statsManager.toMap())
                 }
 

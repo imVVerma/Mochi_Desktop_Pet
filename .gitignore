@@ -13,6 +13,7 @@ env/
 # PyInstaller build artifacts
 build/DesktopPet/
 build/_temp*
+build/desktop_preview/
 DesktopPet.spec
 
 # Scratch & temporary test files

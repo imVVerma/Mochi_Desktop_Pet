@@ -830,7 +830,7 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'AI Character Forge (Next Phase)',
+                              '✨ Roadmap Preview: AI Character Forge',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -839,7 +839,7 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                             ),
                             SizedBox(height: 2),
                             Text(
-                              'Upload any photo, clipart, or drawing. Our vision LLM will convert it into an animated full-body sprite with floating face badge!',
+                              'Planned for Phase 4: Secure backend vision proxy to convert user photos and clipart into custom animated sprite sheets with zero client-side API keys.',
                               style: TextStyle(
                                   fontSize: 11, color: Colors.black87),
                             ),
