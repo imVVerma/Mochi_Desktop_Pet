@@ -4,6 +4,10 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
+import android.os.Build
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
 import android.view.View
 import android.view.animation.LinearInterpolator
 import android.view.animation.OvershootInterpolator
@@ -189,21 +193,62 @@ class PetOverlayView(
         super.onDraw(canvas)
 
         val cx = width / 2f
-        val cy = height / 2f + 14f
+        val cy = height / 2f + 20f
 
-        // Draw Speech Bubble if active
+        // Draw Speech Bubble if active (dynamic wrapping so text never overflows)
         speechMessage?.let { msg ->
-            val bubbleWidth = 110f
-            val bubbleRect = RectF(cx - bubbleWidth, 6f, cx + bubbleWidth, 62f)
-            canvas.drawRoundRect(bubbleRect, 18f, 18f, speechBubblePaint)
+            val maxBubbleWidth = (width - 16f).coerceAtLeast(120f)
+            val maxTextWidth = (maxBubbleWidth - 28f).toInt()
+
+            val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#333333")
+                textSize = 21f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
+
+            val staticLayout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                StaticLayout.Builder.obtain(msg, 0, msg.length, textPaint, maxTextWidth)
+                    .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                    .setLineSpacing(2f, 1f)
+                    .setIncludePad(false)
+                    .build()
+            } else {
+                @Suppress("DEPRECATION")
+                StaticLayout(msg, textPaint, maxTextWidth, Layout.Alignment.ALIGN_CENTER, 1f, 2f, false)
+            }
+
+            var measuredLineWidth = 0f
+            for (i in 0 until staticLayout.lineCount) {
+                val lw = staticLayout.getLineWidth(i)
+                if (lw > measuredLineWidth) {
+                    measuredLineWidth = lw
+                }
+            }
+
+            val padX = 14f
+            val padY = 8f
+            val halfBubbleW = (measuredLineWidth / 2f + padX).coerceIn(45f, maxBubbleWidth / 2f)
+            val bubbleH = staticLayout.height.toFloat() + padY * 2f
+
+            val bubbleTop = 6f
+            val bubbleBottom = bubbleTop + bubbleH
+            val bubbleRect = RectF(cx - halfBubbleW, bubbleTop, cx + halfBubbleW, bubbleBottom)
+            canvas.drawRoundRect(bubbleRect, 14f, 14f, speechBubblePaint)
+
+            // Pointer tail
             val tailPath = Path().apply {
-                moveTo(cx - 8f, 62f)
-                lineTo(cx + 8f, 62f)
-                lineTo(cx, 72f)
+                moveTo(cx - 6f, bubbleBottom)
+                lineTo(cx + 6f, bubbleBottom)
+                lineTo(cx, bubbleBottom + 8f)
                 close()
             }
             canvas.drawPath(tailPath, speechBubblePaint)
-            canvas.drawText(msg, cx, 44f, speechTextPaint)
+
+            // Draw wrapped multi-line text inside bubble
+            canvas.save()
+            canvas.translate(cx - (maxTextWidth / 2f), bubbleTop + padY)
+            staticLayout.draw(canvas)
+            canvas.restore()
         }
 
         // Draw Soft Contact Shadow

@@ -71,10 +71,15 @@ class FloatingPetService : Service() {
             WindowManager.LayoutParams.TYPE_PHONE
         }
 
-        // 2. DP-Based Density Scaling (130dp square)
-        val sizePx = TypedValue.applyDimension(
+        // 2. DP-Based Density Scaling (145dp x 160dp with speech bubble headroom)
+        val widthPx = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
-            130f,
+            145f,
+            resources.displayMetrics
+        ).toInt()
+        val heightPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            160f,
             resources.displayMetrics
         ).toInt()
 
@@ -83,8 +88,8 @@ class FloatingPetService : Service() {
         val initialY = statsManager.positionY.coerceAtLeast(80)
 
         layoutParams = WindowManager.LayoutParams(
-            sizePx,
-            sizePx,
+            widthPx,
+            heightPx,
             layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,

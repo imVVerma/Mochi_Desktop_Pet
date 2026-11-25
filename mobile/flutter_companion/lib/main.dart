@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'bunny_painter.dart';
@@ -359,27 +360,32 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (_currentSpeech != null)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 8,
-                            offset: Offset(0, 3),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: math.min(size.width - 48, 220)),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 8,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          _currentSpeech!,
+                          textAlign: TextAlign.center,
+                          softWrap: true,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Color(0xFF333333),
                           ),
-                        ],
-                      ),
-                      child: Text(
-                        _currentSpeech!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: Color(0xFF333333),
                         ),
                       ),
                     ),
@@ -465,10 +471,10 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
         Expanded(
           child: ElevatedButton.icon(
             onPressed: _onPetTapped,
-            icon: const Icon(Icons.favorite),
-            label: const Text('Pet'),
+            icon: const Icon(Icons.favorite, size: 18),
+            label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Pet')),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
               backgroundColor: const Color(0xFFFF9AA2),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -479,10 +485,10 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
         Expanded(
           child: ElevatedButton.icon(
             onPressed: _onFeedTapped,
-            icon: const Icon(Icons.restaurant),
-            label: const Text('Treat 🍓'),
+            icon: const Icon(Icons.restaurant, size: 18),
+            label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Treat 🍓')),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
               backgroundColor: const Color(0xFFFFB7B2),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -493,10 +499,10 @@ class _FloatingCompanionScreenState extends State<FloatingCompanionScreen>
         Expanded(
           child: ElevatedButton.icon(
             onPressed: _onFocusSessionTapped,
-            icon: const Icon(Icons.timer_outlined),
-            label: const Text('Focus ⏱️'),
+            icon: const Icon(Icons.timer_outlined, size: 18),
+            label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Focus ⏱️')),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
               backgroundColor: const Color(0xFFB39DDB),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
