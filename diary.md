@@ -225,3 +225,39 @@ A living development log of every session, design decision, architectural pivot,
 * **Verification:**
   * Full Python test suite passed (29/29).
   * Successfully rebuilt standalone executable `dist/DesktopPet.exe` via PyInstaller (17.9 MB).
+
+---
+
+## Session 14: Modern "Warm & Cozy" Preferences & Wardrobe Redesign (Nov 27, 2026)
+**Focus:** Redesign the desktop application's "Mochi — Wardrobe & Preferences" dialog with a contemporary warm & cozy aesthetic, replacing harsh black borders with soft rounded cards, refined Mochi avatar illustration, capsule chips, and interactive styling.
+
+* **Warm & Cozy Aesthetic Architecture:**
+  * Replaced stark `#F6F7FB` window background and harsh black borders (`relief=tk.SOLID, bd=1`) with soft warm off-white/beige (`#FAF7F2`) and subtle borders (`#EDE4D8`).
+  * Converted the dense rectangular sections into gently rounded, soft-beige cards with generous internal padding.
+* **Refined Mochi Avatar Illustration:**
+  * Updated vector preview canvas with cream-yellow coat (`#FFF4D2`), fuzzy natural inner ears (`#FCE4C8`), smooth outlines (`#4A3B32`, width=2), golden sparkles (`✨`, `✦`), and pink knitted scarf (`🧣 Cozy Scarf`).
+  * Formatted header typography with friendly dark-navy title (`#1B2A4A`), `"Cozy Companion"` badge, and violet-purple subtitle (`#7C3AED` `PREVIEW • Save & Apply updates Mochi`).
+* **Contemporary Styled Tabs:**
+  * Re-themed ttk Notebook tabs: `🎨 Wardrobe & Outfits`, `⌨️ Hotkeys & Search`, and `⏳ Habits & Focus`.
+  * Active tab highlighted in warm caramel (`#DE9B61`) with white text and hourglass icon; inactive tabs in warm beige (`#EFE8DE`).
+* **Interactive "Habits & Focus" Controls:**
+  * **Taskbar Roosting:** Added duration badge (`#FFF2E5` / `#D97706`), custom slider, and capsule chips (`5s (Quick)` active in soft orange `#FF9F68`, `15s`, `30s`, `60s`).
+  * **Pomodoro Focus Timer:** Added duration badge (`25 min work`), smooth slider, and capsule chips (`15 min`, `25 min (Standard)` active in soft orange, `45 min`, `60 min`).
+  * **Circadian Rhythm:** Styled Bedtime (23:00) and Wake Time (07:00) pill inputs with clean spinbox steppers.
+  * **Wellness Speech Bubbles:** Integrated soft checkbox with `💧 Hydration`, `👁️ Eye Rests`, and `🧘 Posture Check` chip labels.
+* **Refined Action Buttons:**
+  * Warm coral pill **"Save & Apply ✦"** button (`#FF7E67`) paired with clean white **"Cancel"** button.
+* **Preview Verification Workflow:**
+  * Generated high-fidelity AI visual mockup and interactive Generative UI HTML artifact (`mochi_preferences_mockup.html`).
+  * Created `preview_settings.py` for headless screenshot capture and live desktop testing.
+  * Previewed and user-confirmed prior to building release binary.
+* **Files edited:**
+  * `ui/settings_dialog.py`
+  * `preview_settings.py`
+  * `dist/DesktopPet.exe`
+  * `dist/mochi_settings_redesign_preview.png`
+  * `diary.md`
+* **Verification:**
+  * Unit test suite passed (`tests/test_settings_dialog.py` passed).
+  * Full Python test suite passed (`29/29 passed` in 56.0s).
+  * Successfully rebuilt standalone executable `dist/DesktopPet.exe` via PyInstaller (17.9 MB).

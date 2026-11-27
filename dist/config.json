@@ -2,9 +2,9 @@
   "pet_name": "Mochi",
   "species": "bunny",
   "home_corner": "bottom_right",
-  "scale": 0.7,
-  "base_color": "#ff0080",
-  "auto_color": true,
+  "scale": 1.5,
+  "base_color": "#B5EAD7",
+  "auto_color": false,
   "eye_color": "#2C3E50",
   "walk_speed": 3.0,
   "taskbar_height": 45,
@@ -33,9 +33,9 @@
     "idle_dock_seconds": 5
   },
   "hotkeys": {
-    "toggle_visibility": "win+z",
+    "toggle_visibility": "alt+w",
     "toggle_focus": "ctrl+shift+f",
     "pet": "ctrl+shift+p"
   },
-  "accessory": "🎩 Gentleman Top Hat"
+  "accessory": "👑 Royal Crown"
 }
