@@ -199,3 +199,29 @@ A living development log of every session, design decision, architectural pivot,
   * Python test suite passed (29/29).
   * Built release APK with `--split-per-abi` (`app-arm64-v8a-release.apk` - 17.0 MB) signed with official keystore.
   * Staged artifact to `dist/mobile/MochiCompanion.apk`.
+
+---
+
+## Session 13: Desktop Pet Proportional Scaling & Clipping Prevention (Nov 27, 2026)
+**Focus:** Fix clipping and cropping of Mochi in `DesktopPet.exe` across different user scales, outfits, and animation states.
+
+* **Proportional Scaling in `CanvasRenderer`:**
+  * Diagnosed root cause: `PetEngine` adjusted window and canvas dimensions based on `scale` (e.g., `scale = 0.7` shrunk the canvas to 98x98), but `CanvasRenderer.draw()` used fixed hardcoded pixel offsets designed for a 140px canvas. At 70% scale or during hopping/squashing/accessories, feet, ear tips, and hats were clipped outside the canvas borders.
+  * Introduced uniform scale factor `s = max(0.4, min(self.width / 140.0, self.height / 140.0))` across all drawn elements (body, belly, tail, ears, paws/feet, whiskers, blush, eyes, pupils, nose, mouth, accessories, and particles).
+* **Safe Margins & Headroom:**
+  * Rebalanced base proportions to provide >=8px top headroom and >=15px bottom/side padding inside the canvas at 1.0x scale.
+  * Tall accessories (Gentleman Top Hat, Royal Crown) and perked ear states now fit comfortably without touching the canvas edge.
+* **Speech Bubble Boundary Clamping:**
+  * Updated `SpeechBubble.draw()` in `ui/bubble.py` to scale font, padding, and tail with `s` and clamp positioning within canvas bounds (`[4, width - 4]` and `[3, height - 3]`), preventing speech bubbles from clipping off-screen.
+* **Dynamic Scale Resizing in `PetEngine`:**
+  * Updated `apply_preferences()` in `core/engine.py` to dynamically resize the window, canvas, physics bounds, and renderer when the user adjusts the scale slider in Settings, eliminating the need for an app restart.
+  * Scaled mouse hover interaction distance with pet scale.
+* **Files edited:**
+  * `ui/canvas_renderer.py`
+  * `ui/bubble.py`
+  * `core/engine.py`
+  * `dist/DesktopPet.exe`
+  * `diary.md`
+* **Verification:**
+  * Full Python test suite passed (29/29).
+  * Successfully rebuilt standalone executable `dist/DesktopPet.exe` via PyInstaller (17.9 MB).

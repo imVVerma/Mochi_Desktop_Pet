@@ -203,6 +203,27 @@ class PetEngine:
             except Exception:
                 pass
 
+        # Apply scale changes dynamically
+        new_scale = float(new_config.get("scale", 1.0))
+        new_w = max(70, int(140 * new_scale))
+        new_h = max(70, int(140 * new_scale))
+        if new_w != self.width or new_h != self.height:
+            self.width = new_w
+            self.height = new_h
+            self.physics.width = new_w
+            self.physics.height = new_h
+            if hasattr(self, "window") and self.window:
+                self.window.width = new_w
+                self.window.height = new_h
+                try:
+                    self.window.canvas.config(width=new_w, height=new_h)
+                    self.window.set_position(self.physics.x, self.physics.y)
+                except Exception:
+                    pass
+            if hasattr(self, "renderer") and self.renderer:
+                self.renderer.width = new_w
+                self.renderer.height = new_h
+
         # Apply base color
         new_color = new_config.get("base_color", "#FFB6C1")
         if hasattr(self, "tray") and self.tray:
@@ -252,7 +273,8 @@ class PetEngine:
             dist = math.hypot(rel_mx, rel_my)
 
             # Only hovering directly over Mochi's physical body triggers direct interaction
-            if dist < 60.0:
+            hover_radius = 55.0 * (self.width / 140.0)
+            if dist < hover_radius:
                 self.stats.record_interaction()
 
             self.fsm.on_mouse_proximity(dist)
